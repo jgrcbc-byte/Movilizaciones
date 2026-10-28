@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Simulador de Movilizaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: vista cenital de la habitación (escena) junto al panel de decisiones; en móvil, escena arriba y panel debajo. */
+:root{
+  --bg:#edf2f0; --surface:#fbfdfc; --ink:#13231f; --muted:#526b65; --line:#d0dcd8;
+  --scrub:#11705f; --on-scrub:#ffffff; --scrub-soft:#d6ebe4;
+  --ok:#277639; --ok-soft:#e1f0e3; --bad:#b4371e; --bad-soft:#f7e2dc;
+  --floor:#e3e8e5; --wall:#9db0ab; --frame:#a3b1ae; --frame-dark:#7f908c; --mattress:#f6f9fa; --fowler:#c3d9e1;
+  --sheet:#b7d1db; --sheet-fold:#a2c3cf; --skin:#e0ad8b; --gown:#87aac8; --gown-dark:#6a8fb0; --robe:#b5805d;
+  --hair:#4a392e; --pillow:#ffffff; --pillow-line:#c3cfd2; --chair:#4f5c69; --seat:#7c8995; --str:#b9c5ca; --str-top:#eef3f5;
+  --puddle:#8bc2e5; --box:#c09f76; --biombo:#9fb4ae; --window:#bfe0ee; --blanket:#c9a9c9;
+  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1715; --surface:#14201e; --ink:#e3eeeb; --muted:#93aba5; --line:#28403b;
+    --scrub:#43b9a3; --on-scrub:#04201a; --scrub-soft:#16352f;
+    --ok:#62c474; --ok-soft:#173222; --bad:#ff8169; --bad-soft:#3a1d17;
+    --floor:#18221f; --wall:#3c4f4a; --frame:#4f625e; --frame-dark:#6b7f7a; --mattress:#26333a; --fowler:#3a5562;
+    --sheet:#3b5966; --sheet-fold:#476a78; --skin:#d29f7e; --gown:#5f8aaf; --gown-dark:#4b7397; --robe:#a06e4e;
+    --hair:#2b211b; --pillow:#dfe4e2; --pillow-line:#9fabaa; --chair:#9aa7b4; --seat:#5d6974; --str:#4c5a60; --str-top:#33434a;
+    --puddle:#3f86b5; --box:#9c7d58; --biombo:#5d726c; --window:#2f5566; --blanket:#7d607d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1715; --surface:#14201e; --ink:#e3eeeb; --muted:#93aba5; --line:#28403b;
+  --scrub:#43b9a3; --on-scrub:#04201a; --scrub-soft:#16352f;
+  --ok:#62c474; --ok-soft:#173222; --bad:#ff8169; --bad-soft:#3a1d17;
+  --floor:#18221f; --wall:#3c4f4a; --frame:#4f625e; --frame-dark:#6b7f7a; --mattress:#26333a; --fowler:#3a5562;
+  --sheet:#3b5966; --sheet-fold:#476a78; --skin:#d29f7e; --gown:#5f8aaf; --gown-dark:#4b7397; --robe:#a06e4e;
+  --hair:#2b211b; --pillow:#dfe4e2; --pillow-line:#9fabaa; --chair:#9aa7b4; --seat:#5d6974; --str:#4c5a60; --str-top:#33434a;
+  --puddle:#3f86b5; --box:#9c7d58; --biombo:#5d726c; --window:#2f5566; --blanket:#7d607d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.app{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,6vw,3.1rem);font-weight:800;line-height:1}
+h2{font-size:1.35rem;font-weight:800;line-height:1.1}
+h3{font-size:1.18rem;font-weight:600;line-height:1.25}
+p{margin:0}
+.eyebrow{font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--scrub)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--scrub);outline-offset:2px}
+
+/* Home */
+.hero{display:flex;flex-direction:column;gap:12px;padding-block:8px 18px;max-width:46rem}
+.hero p{color:var(--muted);font-size:1.02rem;max-width:62ch}
+.tabs{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-block:6px 18px}
+.tabs button{border:0;background:transparent;padding:10px 16px;border-radius:9px;font-weight:700;color:var(--muted);min-height:44px}
+.tabs button[aria-pressed="true"]{background:var(--scrub);color:var(--on-scrub)}
+.modeNote{color:var(--muted);font-size:.95rem;margin-bottom:16px;max-width:62ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;text-align:left;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--scrub)}
+.card:active{transform:scale(.99)}
+.card .num{grid-row:span 3;font-family:var(--display);font-weight:800;font-size:2.2rem;line-height:1;color:var(--scrub);min-width:1.4ch}
+.card .cat{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.card .nm{font-family:var(--display);font-weight:600;font-size:1.12rem;line-height:1.2}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:.82rem;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);font-size:.8rem;white-space:nowrap}
+.pill.good{background:var(--ok-soft);border-color:transparent;color:var(--ok);font-weight:700}
+
+/* Sim */
+.simTop{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;min-height:44px;font-weight:700;white-space:nowrap}
+.simTitle{display:flex;flex-direction:column;gap:2px;min-width:0}
+.simGrid{display:grid;gap:14px}
+@media (min-width:880px){.simGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.sceneBox{position:sticky;top:12px}}
+.sceneBox{background:var(--floor);border:1px solid var(--line);border-radius:16px;padding:8px;display:flex;flex-direction:column;gap:8px;min-width:0}
+#scene{display:block;width:100%;height:min(44vh,430px);max-width:100%}
+@media (min-width:880px){#scene{height:min(calc(100vh - 190px),620px)}}
+.sceneBox.danger{animation:shake .45s;outline:3px solid var(--bad);outline-offset:-3px}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding-bottom:4px}
+.chip{font-size:.76rem;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:var(--surface);transition:all .3s}
+.chip.on{background:var(--scrub-soft);border-color:transparent;color:var(--scrub);font-weight:700}
+.chip.on::before{content:"✓ "}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.prog{display:flex;align-items:center;gap:12px;font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:6px;border-radius:99px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--scrub);border-radius:99px;transition:width .4s}
+.ctx{padding:10px 12px;border-radius:10px;background:var(--bg);color:var(--ink);font-size:.95rem;border-left:3px solid var(--scrub)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:flex-start;gap:10px;text-align:left;width:100%;min-height:52px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);line-height:1.35;transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--scrub)}
+.opt:disabled{cursor:default}
+.opt .mk{flex:none;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;margin-top:-1px;font-variant-numeric:tabular-nums}
+.opt.sel{border-color:var(--scrub);background:var(--scrub-soft)}
+.opt.sel .mk{background:var(--scrub);border-color:var(--scrub);color:var(--on-scrub)}
+.opt.ok{border-color:var(--ok);background:var(--ok-soft)}
+.opt.ok .mk{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.opt.bad{border-color:var(--bad);background:var(--bad-soft)}
+.opt.bad .mk{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.opt.dim{opacity:.55}
+.opts.figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.opts.figs .opt{flex-direction:column;align-items:center;text-align:center;font-size:.84rem;padding:10px 8px;gap:6px}
+.fig{width:64px;height:82px}
+.fig circle{fill:var(--ink)}
+.fig path{stroke:var(--ink);stroke-width:4.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.fig rect{fill:var(--box)}
+.fig .figFloor{stroke:var(--line);stroke-width:2}
+.fb{padding:12px 14px;border-radius:12px;font-size:.95rem;line-height:1.45}
+.fb.ok{background:var(--ok-soft);color:var(--ink)}
+.fb.ok b{color:var(--ok)}
+.fb.bad{background:var(--bad-soft);color:var(--ink)}
+.fb.bad b{color:var(--bad)}
+.primary{border:0;background:var(--scrub);color:var(--on-scrub);border-radius:12px;padding:14px 18px;min-height:52px;font-family:var(--display);font-weight:800;font-size:1.05rem;letter-spacing:.01em}
+.primary:active{transform:scale(.98)}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.row > *{flex:1 1 180px}
+.case{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.95rem}
+.case dt{color:var(--muted);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding-top:2px}
+.case dd{margin:0}
+.hint{font-size:.88rem;color:var(--muted)}
+.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.score b{font-family:var(--display);font-size:3rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.score span{font-weight:700}
+.lst{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;font-size:.94rem}
+.lst li::marker{color:var(--muted)}
+.box2{display:grid;gap:10px}
+@media (min-width:560px){.box2{grid-template-columns:1fr 1fr}}
+.kbox{padding:12px 14px;border-radius:12px;background:var(--bg);display:flex;flex-direction:column;gap:8px;min-width:0}
+.kbox h4{margin:0;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase}
+.kbox.k h4{color:var(--ok)} .kbox.e h4{color:var(--bad)}
+.errs{display:flex;flex-direction:column;gap:8px}
+.err{padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:.92rem;display:flex;flex-direction:column;gap:3px}
+.err i{font-style:normal;color:var(--bad);font-weight:700}
+
+/* Checklist */
+.chk{max-width:760px;display:flex;flex-direction:column;gap:14px}
+.citem{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);min-height:52px}
+.citem .bx{flex:none;width:26px;height:26px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;color:var(--on-scrub)}
+.citem[aria-pressed="true"]{border-color:var(--scrub);background:var(--scrub-soft)}
+.citem[aria-pressed="true"] .bx{background:var(--scrub);border-color:var(--scrub)}
+.citem.er[aria-pressed="true"]{border-color:var(--bad);background:var(--bad-soft)}
+.citem.er[aria-pressed="true"] .bx{background:var(--bad);border-color:var(--bad)}
+.citem .n{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700;min-width:1.6ch}
+.tip{padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.tip p{font-size:.95rem}
+.sticky{position:sticky;bottom:0;padding-block:10px;background:linear-gradient(to top,var(--bg) 70%,transparent);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tally{font-family:var(--display);font-weight:800;font-size:1.2rem;font-variant-numeric:tabular-nums}
+
+/* Identificación y panel de notas */
+.idcard{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 16px;border:1px solid var(--line);background:var(--surface);border-radius:14px;margin-bottom:16px}
+.idcard.need{border-color:var(--bad)}
+.field{display:flex;flex-direction:column;gap:5px;flex:1 1 220px;min-width:0}
+.field label{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px;width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--scrub);outline-offset:1px}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.who b{font-family:var(--display);font-size:1.15rem}
+.tctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px}
+.tctl .field{flex:0 1 220px}
+.tctl .row{flex:1 1 260px;justify-content:flex-end}
+.tctl .row > *{flex:0 0 auto}
+.tblWrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-block:10px 16px}
+table.notes{border-collapse:collapse;width:100%;font-size:.92rem;font-variant-numeric:tabular-nums}
+table.notes th,table.notes td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:top}
+table.notes th{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--surface);position:sticky;top:0}
+table.notes td.c,table.notes th.c{text-align:center}
+table.notes tr:last-child td{border-bottom:0}
+tr.trow{cursor:pointer}
+tr.trow:hover td{background:var(--bg)}
+tr.trow.sel td{background:var(--scrub-soft)}
+tr.trow:focus-visible{outline:3px solid var(--scrub);outline-offset:-3px}
+.nota{font-family:var(--display);font-weight:800;font-size:1.05rem}
+.lo{color:var(--bad)} .hi{color:var(--ok)}
+.sub{display:block;font-size:.7rem;color:var(--muted)}
+.wrap{white-space:normal!important;min-width:240px}
+.wrap ul{margin:0;padding-left:1em;font-size:.84rem;color:var(--muted)}
+.empty{padding:28px 18px;display:flex;flex-direction:column;gap:6px;max-width:60ch}
+.code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.78rem;word-break:break-all;min-height:110px;resize:vertical}
+details.tip summary{cursor:pointer;font-weight:700;font-family:var(--display);min-height:30px;display:flex;align-items:center}
+details.tip[open]{gap:10px}
+.det{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.danger-btn{border:1.5px solid var(--bad);color:var(--bad);background:var(--surface);border-radius:10px;padding:8px 12px;min-height:44px;font-weight:700}
+
+/* SVG scene */
+#scene .floor{fill:var(--floor)}
+#scene .wallLine{fill:none;stroke:var(--wall);stroke-width:6}
+#scene .door{fill:none;stroke:var(--wall);stroke-width:2;stroke-dasharray:4 4}
+#scene .doorLeaf{stroke:var(--wall);stroke-width:4}
+#scene .window{fill:var(--window)}
+#scene .roomLbl{font:700 11px var(--body);letter-spacing:.14em;fill:var(--muted)}
+#scene .frame{fill:var(--frame)}
+#scene .frameDark{fill:var(--frame-dark)}
+#scene .mattress{fill:var(--mattress)}
+#scene .bedLbl{font:700 10px var(--body);fill:var(--muted);text-anchor:middle;letter-spacing:.06em}
+#scene .wheel{fill:var(--frame-dark);transition:fill .3s}
+#scene .wheel.on{fill:var(--ok)}
+#scene .tagOk{fill:var(--ok)}
+#scene .tagTxt{font:700 10px var(--body);fill:var(--surface);text-anchor:middle;letter-spacing:.04em}
+#scene .fade{transition:opacity .5s}
+#scene .gown{fill:var(--gown)}
+#scene .robe .gown{fill:var(--robe)}
+#scene .limb{fill:none;stroke:var(--gown);stroke-linecap:round;stroke-linejoin:round}
+#scene .robe .limb{stroke:var(--robe)}
+#scene .limbDark{fill:none;stroke:var(--gown-dark);stroke-linecap:round}
+#scene .robe .limbDark{stroke:var(--robe)}
+#scene .knee{fill:var(--gown-dark);opacity:.5}
+#scene .spine{stroke:var(--gown-dark);stroke-width:2;fill:none}
+#scene .skin{fill:var(--skin)}
+#scene .hair{fill:var(--hair)}
+#scene .eye{fill:var(--hair)}
+#scene .slipper{fill:var(--chair)}
+#scene .sheet{fill:var(--sheet);opacity:.94}
+#scene .sheetFold{fill:var(--sheet-fold)}
+#scene .entre{fill:var(--sheet-fold);opacity:.8}
+#scene .pillow{fill:var(--pillow);stroke:var(--pillow-line);stroke-width:1.5}
+#scene .blanket{fill:var(--blanket);opacity:.92}
+#scene .tire{fill:var(--chair)}
+#scene .seat{fill:var(--seat)}
+#scene .seatDark{fill:var(--chair)}
+#scene .str{fill:var(--str)}
+#scene .strTop{fill:var(--str-top)}
+#scene .badge{fill:var(--ok)}
+#scene .badgeT{font:800 9px var(--body);fill:var(--surface);text-anchor:middle}
+#scene .scrub{fill:var(--scrub)}
+#scene .auxHead{fill:var(--hair)}
+#scene .auxTag{fill:var(--surface);stroke:var(--scrub);stroke-width:1.5}
+#scene .auxLbl{font:800 10px var(--body);fill:var(--scrub);text-anchor:middle}
+#scene .puddle{fill:var(--puddle);opacity:.75}
+#scene .boxH{fill:var(--box)}
+#scene .biombo{fill:none;stroke:var(--biombo);stroke-width:6;stroke-linejoin:round;stroke-linecap:round}
+#scene .mv{transition:transform .9s cubic-bezier(.45,.05,.2,1),opacity .4s;transform-box:view-box;transform-origin:0 0}
+#scene.noanim .mv{transition:none!important}
+#scene .pop{animation:pop .5s ease}
+@keyframes pop{from{opacity:.25}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#scene .mv{transition-duration:.01s!important}#scene .pop{animation:none}.sceneBox.danger{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="app"><main id="view"></main></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const view = $('#view');
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const sg = s => s==='p' ? -1 : 1;
+const nm = s => s==='p' ? 'puerta' : 'ventana';
+const opp = s => s==='p' ? 'v' : 'p';
+const AX = s => s==='p' ? 104 : 336;
+const YY = {head:140, chest:190, hips:248, thighs:300, legs:350};
+const DOOR = [[62,478],[62,528],[112,528]];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+const STANDALONE = true;
+const CAP = {ready:true, db:null, user:null, dl:null, uid:null, owner:false, saveBroken:true};
+const capReady = Promise.resolve();
+
+let alumno = store.get('movi-alumno', null);
+const histAll = () => store.get('movi-hist', []);
+function pushHist(att){ const h = histAll().filter(x => x.id !== att.id); h.push(att); store.set('movi-hist', h.slice(-80)); }
+function myAttempts(){ const k = norm(alumno ? alumno.nombre : ''); return histAll().filter(x => norm(x.nombre) === k); }
+const slimAtt = (a, ne, nl) => Object.assign({}, a, {errs:(a.errs||[]).slice(0,ne).map(x=>cut(x,nl)), nombre:undefined, grupo:undefined});
+function allCode(){ const as = myAttempts(); return as.length ? encCode({n:alumno.nombre, g:alumno.grupo, as: as.map(a => slimAtt(a,4,60))}) : ''; }
+let editingId = false;
+const norm = s => String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
+const cut = (s, n) => { s = String(s||''); return s.length > n ? s.slice(0, n-1) + '…' : s; };
+const fmt1 = x => x.toFixed(1).replace('.', ',');
+
+const KEY = 'TCB-movilizaciones-2026';
+function fnv(s){ let h = 0x811c9dc5; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); }
+function encCode(obj){
+  const b = new TextEncoder().encode(JSON.stringify(obj)); let bin = '';
+  b.forEach((x,i) => { bin += String.fromCharCode(x ^ (KEY.charCodeAt(i % KEY.length) & 255)); });
+  const p = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return 'MOV1.' + p + '.' + fnv(p + KEY);
+}
+function decCode(code){
+  const m = /^MOV1\.([A-Za-z0-9_-]+)\.([a-z0-9]+)$/.exec(String(code).trim()); if (!m) return null;
+  if (fnv(m[1] + KEY) !== m[2]) return null;
+  try {
+    let s = m[1].replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '=';
+    const bin = atob(s), b = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) b[i] = bin.charCodeAt(i) ^ (KEY.charCodeAt(i % KEY.length) & 255);
+    return JSON.parse(new TextDecoder().decode(b));
+  } catch(e){ return null; }
+}
+function cleanAtt(a){
+  if (!a || typeof a !== 'object') return null;
+  const f = +a.f, n = +a.n, ok = +a.ok;
+  if (!(f>=1 && f<=7) || !(n>0) || !(ok>=0)) return null;
+  return {id:String(a.id||'').slice(0,40), f, n, ok:Math.min(ok,n), colab: a.colab===true?true:(a.colab===false?false:null),
+    t:String(a.t||''), dur:Math.max(0, +a.dur||0), errs:Array.isArray(a.errs)?a.errs.slice(0,12).map(x=>cut(x,120)):[]};
+}
+let saveChain = Promise.resolve();
+function saveAttempt(att){
+  const run = async () => {
+    await capReady;
+    if (!(CAP.db && CAP.uid) || CAP.saveBroken) return {ok:false};
+    const ref = CAP.db.doc('intentos/' + CAP.uid);
+    for (let tries=0; tries<2; tries++){
+      try {
+        const snap = await ref.get();
+        const d = snap.exists ? snap.data() : {};
+        const prev = Array.isArray(d.attempts) ? d.attempts.filter(x => x && x.id !== att.id) : [];
+        await ref.set({nombre:att.nombre, grupo:att.grupo, actualizado:att.t, attempts: prev.concat([att]).slice(-250)});
+        return {ok:true};
+      } catch(e){
+        if (e && e.code === 'unavailable' && tries === 0){ await new Promise(r => setTimeout(r, 600 + Math.random()*600)); continue; }
+        if (!(e && e.code === 'quota_exceeded')) CAP.saveBroken = true;
+        return {ok:false};
+      }
+    }
+    return {ok:false};
+  };
+  const p = saveChain.then(run, run); saveChain = p.catch(() => {}); return p;
+}
+async function copyText(text, ta){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){ if (ta){ ta.focus(); ta.select(); } return false; }
+}
+
+const PAC = [
+  {n:'D. Antonio Hernández', e:78, f:'D. Antonio'},
+  {n:'D. Pedro González', e:69, f:'D. Pedro'},
+  {n:'D. Manuel Rodríguez', e:73, f:'D. Manuel'},
+  {n:'D. Francisco Afonso', e:84, f:'D. Francisco'},
+  {n:'D. José Luis Díaz', e:91, f:'D. José Luis'},
+  {n:'D. Juan Perera', e:80, f:'D. Juan'}
+];
+
+/* ---------- estado ---------- */
+function baseState(){
+  return {material:false, gloves:false, informed:false, privacy:false, brake:false, reported:false,
+    bedHead:'fowler', pillow:'head', covered:true, pose:'supino', facing:'v', headTurn:null,
+    px:0, py:0, sitSide:'v', arm:{p:'side',v:'side'}, leg:{p:'straight',v:'straight'},
+    gown:false, blanket:false, entre:false, aux:[], chair:null, str:null, ppos:null,
+    hazards:false, hasHazards:false, slow:false, biombo:'left'};
+}
+function setAux(S, list){ S.aux = list.map(a => ({label:a[0], x:a[1], y:a[2]})); }
+function doorAux(S, n){ setAux(S, DOOR.slice(0,n).map((p,i)=>[n===1?'Tú':'A'+(i+1), p[0], p[1]])); }
+
+/* ---------- pasos comunes ---------- */
+function rutinaIni(){
+  return {type:'order', q:'Rutina inicial. Toca los pasos en el orden correcto.', ck:'Rutina inicial completa y en orden',
+    items:[
+      {t:'Preparar el material que vas a necesitar', a:S=>{S.material=true}},
+      {t:'Lavarte las manos y ponerte los guantes', a:S=>{S.gloves=true}},
+      {t:'Explicar al paciente qué vas a hacer y pedirle que colabore en lo que pueda', a:S=>{S.informed=true}},
+      {t:'Preservar su intimidad: cerrar la puerta o colocar un biombo', a:S=>{S.privacy=true}},
+      {t:'Frenar la cama y ponerla horizontal', a:S=>{S.brake=true; S.bedHead='flat'}}
+    ], wrong:'Ese paso va más adelante. Piensa qué tiene que estar hecho antes.',
+    fb:'Rutina inicial completa: ya puedes tocar al paciente.'};
+}
+function rutinaFin(){
+  return {type:'order', q:'Rutina final. Toca los pasos en el orden correcto.', ck:'Rutina final completa y en orden',
+    items:[
+      {t:'Alinear su cuerpo y acomodarlo con almohadas u otros accesorios', a:S=>{ if(S.pillow==='off'||S.pillow==='headboard') S.pillow='head'; }},
+      {t:'Revisar las zonas de presión (masaje con loción hidratante, si está indicado)'},
+      {t:'Arreglar la cama y tapar al paciente', a:S=>{S.covered=true}},
+      {t:'Quitarte los guantes y lavarte las manos', a:S=>{S.gloves=false}},
+      {t:'Comunicar a la enfermera/o lo observado y registrarlo en el plan de cuidados', a:S=>{S.reported=true}}
+    ], wrong:'Ese paso va más adelante.',
+    fb:'Procedimiento terminado y registrado.'};
+}
+function cierre(){
+  return {type:'choice', q:'Para terminar, ¿qué te falta?', ck:'Se quita los guantes, se lava las manos, comunica y registra',
+    opts:[
+      {t:'Quitarme los guantes, lavarme las manos y comunicar y registrar lo observado', ok:true, fb:'Procedimiento terminado y registrado.'},
+      {t:'Nada más: el paciente ya está colocado', fb:'Falta cerrar: retirar los guantes, lavarte las manos y comunicar y registrar lo que has observado.'},
+      {t:'Lo registro al final del turno, con los guantes aún puestos', fb:'Los guantes se retiran al acabar y después te lavas las manos. Se comunica y se registra en el momento.'}
+    ], a:S=>{S.gloves=false; S.reported=true}};
+}
+function auxCount(n, why){
+  return {type:'choice', q:'¿Cuántos auxiliares necesitáis para esta técnica?', ck:`Organiza el personal necesario (${n===3?'al menos 3':n})`,
+    opts:[1,2,3].map(k=>({t: k===1?'1 auxiliar':(k===3?'3 auxiliares (o más)':k+' auxiliares'), ok:k===n, fb:why})),
+    a:S=>doorAux(S,n)};
+}
+function posture(q){
+  return {type:'choice', fig:true, q: q || 'Antes de hacer fuerza, ¿qué postura adoptas?', ck:'Mecánica corporal: pies separados, rodillas flexionadas, espalda recta',
+    opts:[
+      {fig:'good', t:'Pies separados y uno adelantado; rodillas flexionadas y tronco recto', ok:true, fb:'Base de apoyo amplia, y la fuerza la hacen las piernas, no la espalda.'},
+      {fig:'back', t:'Piernas rectas y espalda inclinada hacia el paciente', fb:'Así cargas la zona lumbar. Flexiona las rodillas, no la espalda, y mantén el tronco recto.'},
+      {fig:'feet', t:'Pies juntos y brazos estirados, lejos del cuerpo', fb:'Con los pies juntos pierdes estabilidad, y con el peso lejos haces más fuerza. Separa los pies y acerca el peso a tu cuerpo.'}
+    ]};
+}
+function retirar(){
+  return {type:'choice', q:'¿Qué haces antes de empezar a moverlo?', ck:'Retira las almohadas y destapa al paciente',
+    opts:[
+      {t:'Retiro las almohadas y lo destapo', ok:true, fb:'Así tienes el cuerpo libre para desplazarlo y girarlo.'},
+      {t:'Lo dejo tapado y con la almohada, para que no pase frío', fb:'Con la ropa y la almohada encima no puedes ver ni sujetar bien. Retira las almohadas y destápalo.'},
+      {t:'Elevo la cabecera para que esté más cómodo', fb:'El cambio postural se hace con la cama horizontal, salvo contraindicación.'}
+    ], a:S=>{S.pillow='off'; S.covered=false}};
+}
+function almohadaCab(){
+  return {type:'choice', q:'Antes de moverlo, ¿qué haces con la almohada?', ck:'Deja la almohada apoyada contra el cabecero',
+    opts:[
+      {t:'La apoyo contra el cabecero', ok:true, fb:'Así protege su cabeza si llega al cabecero.'},
+      {t:'La dejo bajo su cabeza', fb:'Al moverlo, la almohada se arrastra y su cabeza puede golpear el cabecero. Apóyala contra él.'},
+      {t:'La quito y la dejo en el sillón', danger:true, fb:'Error frecuente: sin la almohada en el cabecero, puede golpearse la cabeza.'}
+    ], a:S=>{S.pillow='headboard'}};
+}
+
+/* ---------- las 7 fichas ---------- */
+const FICHAS = [
+{ id:1, cat:'Cambio postural', name:'Decúbito lateral', para:'Girar de lado al paciente que está boca arriba.', personal:'2 auxiliares', variants:false,
+  clave:['Primero a la orilla, después el giro: nunca al revés.','El paciente siempre queda protegido por un auxiliar en el lado hacia el que puede caer.'],
+  errores:['Girar sin haber desplazado antes al paciente: queda pegado al borde.','Olvidar separar el brazo: el paciente rueda sobre él.'],
+  aula:'Sobre colchonetas o esterillas en el suelo: un compañero hace de paciente y dos trabajan de rodillas, con el tronco recto. Ensayad la presa, la señal común y el giro.',
+  setup(c){ c.goal = `Girarlo a decúbito lateral. Debe quedar mirando hacia la ${nm(c.side)}.`; c.n = 2; },
+  init(S){ setAux(S,[['A1',200,470],['A2',250,470]]); },
+  steps(c){ const F=c.side, O=opp(F); return [
+    rutinaIni(),
+    retirar(),
+    {type:'choice', q:`Tiene que quedar mirando hacia la ${nm(F)}. ¿Hacia qué orilla lo desplazáis primero?`, ck:'Desplaza al paciente hacia la orilla contraria a la que mirará',
+      opts:[
+        {t:`Hacia la orilla de la ${nm(O)}`, ok:true, fb:'Es la contraria a la que va a mirar: tras el giro quedará centrado en la cama.'},
+        {t:`Hacia la orilla de la ${nm(F)}`, danger:true, fb:'Tras el giro quedaría pegado al borde, con riesgo de caída. Se desplaza hacia la orilla contraria a la que va a mirar.'},
+        {t:'No hace falta: lo giramos desde el centro', danger:true, fb:'Error frecuente: si lo giras sin desplazarlo antes, queda pegado al borde.'}
+      ], a:S=>setAux(S,[['A1',AX(O),YY.head+12],['A2',AX(O),YY.thighs-6]])},
+    posture(`Os colocáis los dos en la orilla de la ${nm(O)}. ¿Qué postura adoptas?`),
+    {type:'choice', q:'¿Qué haces con los brazos del paciente antes de desplazarlo?', ck:'Cruza los brazos del paciente sobre el tórax',
+      opts:[
+        {t:'Se los cruzo sobre el tórax', ok:true, fb:'Así no se enganchan ni estorban mientras lo desplazáis.'},
+        {t:'Se los dejo estirados a lo largo del cuerpo', fb:'Estirados pueden quedar enganchados o colgando fuera de la cama. Crúzalos sobre el tórax.'},
+        {t:'Le pido que se agarre a mi cuello', fb:'Eso se usa al trasladar a la silla a un paciente que colabora. Aquí los brazos van cruzados sobre el tórax.'}
+      ], a:S=>{S.arm={p:'cross',v:'cross'}}},
+    {type:'choice', q:'¿Dónde coloca los brazos el Aux. 1?', ck:'Aux. 1: brazo bajo cabeza y cuello hasta el hombro alejado; otra mano bajo la zona lumbar',
+      opts:[
+        {t:'Un brazo bajo la cabeza y el cuello hasta el hombro más alejado, y la otra mano bajo la zona lumbar', ok:true},
+        {t:'Un brazo bajo los glúteos y el otro bajo los muslos', fb:'Esa es la presa del Aux. 2. El Aux. 1 se encarga de la cabeza, los hombros y la zona lumbar.'},
+        {t:'Sujeta al paciente por las axilas y tira', danger:true, fb:'Nunca tires de las axilas: puedes lesionarle los hombros.'}
+      ]},
+    {type:'choice', q:'¿Y el Aux. 2?', ck:'Aux. 2: un brazo bajo los glúteos y otro bajo el tercio inferior de los muslos',
+      opts:[
+        {t:'Un brazo bajo los glúteos y el otro bajo el tercio inferior de los muslos', ok:true},
+        {t:'Las dos manos bajo los tobillos', fb:'Desde los tobillos no controla el peso de la pelvis. El Aux. 2 sujeta glúteos y muslos.'},
+        {t:'Un brazo bajo la cabeza y el otro bajo la zona lumbar', fb:'Esa es la presa del Aux. 1.'}
+      ]},
+    {type:'choice', q:'Ya tenéis la presa. ¿Cómo lo desplazáis?', ck:'Uno da la señal y tiran a la vez hacia ellos',
+      opts:[
+        {t:'Uno da la señal («a la de tres») y tiramos a la vez hacia nosotros', ok:true, fb:'Al moveros a la vez, el cuerpo se desplaza alineado.'},
+        {t:'Cada uno tira cuando está preparado', fb:'Si no os movéis a la vez, el cuerpo se tuerce. Uno da la señal y os movéis juntos.'},
+        {t:'Lo levantamos en peso y lo dejamos en la orilla', fb:'Siempre que sea posible, desliza o arrastra en lugar de levantar.'}
+      ], a:S=>{S.px=sg(O)}},
+    {type:'choice', ctx:`El paciente está en la orilla de la ${nm(O)}.`, q:'¿Cómo os repartís ahora para el giro?', ck:'Uno pasa al lado libre; el otro se queda en la orilla para que no caiga',
+      opts:[
+        {t:`Uno pasa al lado de la ${nm(F)} y el otro se queda en la orilla de la ${nm(O)}`, ok:true, fb:'El que se queda en la orilla impide que caiga; el otro lo girará desde el lado libre.'},
+        {t:`Los dos pasamos al lado de la ${nm(F)}`, danger:true, fb:'El paciente queda en el borde sin nadie al lado. Siempre tiene que haber un auxiliar en el lado hacia el que puede caer.'},
+        {t:`Los dos nos quedamos en la orilla de la ${nm(O)} y lo empujamos`, danger:true, fb:'Si lo empujáis, nadie lo recoge en el otro lado. Se gira atrayéndolo hacia ti desde el lado libre.'}
+      ], a:S=>setAux(S,[['A1',AX(O),YY.chest+12],['A2',AX(F),YY.chest+40]])},
+    {type:'choice', q:'Antes del giro, ¿cómo preparas los brazos y las piernas?', ck:'Flexiona pierna y brazo del lado de la orilla; separa el brazo contrario',
+      opts:[
+        {t:`Flexiono la pierna y el brazo del lado de la orilla (${nm(O)}) y separo del cuerpo el otro brazo`, ok:true, fb:'El brazo separado no quedará atrapado debajo al rodar.'},
+        {t:`Pego al cuerpo el brazo del lado de la ${nm(F)}`, danger:true, fb:'Error frecuente: el paciente rodaría sobre ese brazo. En lateral se separa del cuerpo.'},
+        {t:'Cruzo la pierna de la orilla sobre la otra', fb:'Eso se hace en el decúbito prono. En lateral se flexiona la pierna de la orilla.'}
+      ], a:S=>{S.arm={[O]:'flex',[F]:'out'}; S.leg={[O]:'flex',[F]:'straight'}}},
+    {type:'choice', q:'¿Cómo lo giras?', ck:'Gira desde el lado libre, sujetando hombro y cadera, con suavidad',
+      opts:[
+        {t:`Desde el lado de la ${nm(F)}, lo sujeto por el hombro y la cadera y lo atraigo hacia mí con suavidad`, ok:true, fb:'El otro auxiliar ayuda desde la orilla contraria.'},
+        {t:'Tiro de su brazo para que ruede', danger:true, fb:'Nunca tires del brazo: sujeta por el hombro y la cadera.'},
+        {t:`Desde la orilla de la ${nm(O)}, lo empujo de golpe`, danger:true, fb:'El giro se hace con suavidad, atrayéndolo hacia ti desde el lado libre.'}
+      ], a:S=>{S.pose='lateral'; S.facing=F; S.px=0}},
+    {type:'choice', ctx:'Ya está de lado.', q:'¿Qué haces ahora, si está indicado?', ck:'Masaje en las zonas que soportan presión',
+      opts:[
+        {t:'Le doy un masaje en las zonas que soportan presión', ok:true},
+        {t:'Lo tapo y me voy', fb:'Antes revisa las zonas de presión y coloca las almohadas para mantener la postura.'},
+        {t:'Lo vuelvo a poner boca arriba para revisarle la espalda', fb:'No hace falta deshacer el giro: de lado ya tienes acceso a la espalda y los glúteos.'}
+      ]},
+    {type:'multi', q:'¿Dónde colocas almohadas para mantener la postura? Marca todas las que correspondan.', ck:'Almohadas detrás de la espalda, entre las piernas y bajo el brazo de arriba',
+      items:[{t:'Detrás de la espalda', ok:true},{t:'Entre las piernas', ok:true},{t:'Bajo el brazo que queda arriba', ok:true},{t:'Bajo los talones'},{t:'Bajo la cintura'}],
+      fb:'Estas tres almohadas mantienen la postura y evitan el roce entre rodillas y tobillos.', a:S=>{S.pillow='supports'}},
+    rutinaFin()
+  ];}
+},
+{ id:2, cat:'Cambio postural', name:'Decúbito prono', para:'Pasar al paciente de boca arriba a boca abajo.', personal:'1 auxiliar · 2 si no colabora', variants:true,
+  clave:['La secuencia es: orilla → brazos → piernas → giro.','Al terminar, la cabeza queda girada hacia un lado para que respire con comodidad.'],
+  errores:['Cruzar la pierna equivocada: el giro se frena.','Dejar separado del cuerpo el brazo sobre el que rueda: queda atrapado en mala posición.'],
+  aula:'Sobre colchoneta. El compañero que hace de paciente deja el cuerpo relajado, sin ayudar. Practicad la secuencia orilla → brazos → piernas → giro y comprobad que el brazo pegado no queda atrapado.',
+  setup(c){ c.n = c.colab?1:2; c.goal = `Pasarlo a decúbito prono. Al girar, rodará hacia el lado de la ${nm(opp(c.side))}.`; },
+  init(){},
+  steps(c){ const E=c.side, O=opp(E), one=c.n===1; return [
+    auxCount(c.n, one ? 'Si el paciente colabora, basta con 1 auxiliar.' : 'Si el paciente no colabora, hacen falta 2 auxiliares.'),
+    rutinaIni(),
+    retirar(),
+    {type:'choice', q:`Va a rodar hacia la ${nm(O)}. ¿A qué orilla lo llevas primero?`, ck:'Coloca al paciente en la orilla para que tras el giro quede centrado',
+      opts:[
+        {t:`A la orilla de la ${nm(E)}`, ok:true, fb:'Como en la ficha 1: tras el giro quedará centrado en la cama.'},
+        {t:`A la orilla de la ${nm(O)}`, danger:true, fb:'Rodaría hacia ese borde y acabaría pegado a él, con riesgo de caída.'},
+        {t:'Lo giro desde el centro de la cama', danger:true, fb:'Primero a la orilla. Desde el centro acabaría junto al borde.'}
+      ], a:S=>{ S.px=sg(E); setAux(S, one?[['Tú',AX(E),YY.hips-10]]:[['A1',AX(E),YY.chest],['A2',AX(E),YY.thighs]]); }},
+    {type:'choice', q:'Ahora prepara los brazos.', ck:'Flexiona ligeramente el brazo de la orilla y pega el otro al cuerpo',
+      opts:[
+        {t:`Flexiono un poco el brazo de la orilla (${nm(E)}) y pego el otro al cuerpo`, ok:true, fb:'El paciente rodará sobre el brazo pegado al cuerpo.'},
+        {t:`Separo del cuerpo el brazo del lado de la ${nm(O)}`, danger:true, fb:'Error frecuente: ese brazo quedaría atrapado en mala posición. En prono se pega al cuerpo para que ruede sobre él.'},
+        {t:'Le cruzo los dos brazos sobre el tórax', fb:'Acabaría boca abajo apoyado sobre los brazos. Flexiona el de la orilla y pega el otro al cuerpo.'}
+      ], a:S=>{S.arm={[E]:'flex',[O]:'tight'}}},
+    {type:'choice', q:'Ahora las piernas.', ck:'Cruza la pierna de la orilla por encima de la otra',
+      opts:[
+        {t:`Cruzo la pierna de la orilla (${nm(E)}) por encima de la otra`, ok:true, fb:'Así el cuerpo rueda con facilidad.'},
+        {t:`Cruzo la pierna de la ${nm(O)} sobre la otra`, fb:'Error frecuente: cruzar la pierna equivocada frena el giro.'},
+        {t:'Flexiono la pierna de la orilla', fb:'Eso es para el decúbito lateral. En prono se cruza la pierna de la orilla sobre la otra.'}
+      ], a:S=>{S.leg={[E]:'cross',[O]:'straight'}}},
+    {type:'choice', ctx:'Secuencia: orilla → brazos → piernas → giro.', q:'¿Cómo lo giras?', ck:'Gira con suavidad pasando por lateral hasta boca abajo',
+      opts:[
+        {t:`Con suavidad hacia la ${nm(O)}, pasando por la posición lateral, hasta dejarlo boca abajo`, ok:true},
+        {t:'Lo dejo de lado y doy el giro por terminado', fb:'Eso es el decúbito lateral. En prono el giro continúa hasta boca abajo.'},
+        {t:'Lo levanto un poco y le doy la vuelta de golpe', danger:true, fb:'El giro se hace con suavidad, rodando sobre la cama, sin levantarlo.'}
+      ], a:(S,later)=>{
+        setAux(S, one?[['Tú',AX(O),YY.hips-10]]:[['A1',AX(O),YY.chest],['A2',AX(E),YY.thighs]]);
+        S.pose='lateral'; S.facing=O; S.px=sg(E)*0.5; S.arm={p:'side',v:'side'}; S.leg={p:'straight',v:'straight'};
+        later(()=>{S.pose='prono'; S.px=0; S.headTurn=null;}, 950);
+      }},
+    {type:'choice', ctx:'Ya está boca abajo.', q:'¿Cómo debe quedar su cabeza?', ck:'Deja la cabeza girada hacia un lado',
+      opts:[
+        {t:'Girada hacia un lado, para que respire con comodidad', ok:true},
+        {t:'Con la cara apoyada en la almohada, mirando hacia abajo', danger:true, fb:'Así le cuesta respirar. La cabeza queda girada hacia un lado.'},
+        {t:'Elevada, con dos almohadas bajo la frente', fb:'No hace falta elevarla: basta con girarla hacia un lado para que respire bien.'}
+      ], a:S=>{S.headTurn=O}},
+    {type:'choice', q:'¿Qué haces antes de la rutina final?', ck:'Masaje en las zonas más presionadas y alinea el cuerpo',
+      opts:[
+        {t:'Doy un masaje en las zonas más presionadas y alineo el cuerpo', ok:true},
+        {t:'Le dejo el brazo bajo el cuerpo, si no se queja', danger:true, fb:'Alinea el cuerpo y revisa que ningún brazo quede atrapado.'}
+      ]},
+    rutinaFin()
+  ];}
+},
+{ id:3, cat:'Recolocación en la cama', name:'Subir hacia la cabecera', para:'Recolocar al paciente que se ha deslizado hacia los pies de la cama.', personal:'1 auxiliar · 2 si no colabora', variants:true,
+  clave:['Con un paciente que no colabora es más fácil usar la entremetida: se desliza sin levantarlo.','La almohada va contra el cabecero mientras lo subes.'],
+  errores:['Olvidar la almohada en el cabecero: riesgo de golpe.','Tirar de las axilas o los brazos del paciente.','Moverse sin una señal común.'],
+  aula:'Sobre colchoneta y suelo liso. Si el paciente colabora: rodillas flexionadas y empuje con los talones. Si no colabora: una sábana doblada hace de entremetida y se arrastra sin levantar.',
+  setup(c){ c.n = c.colab?1:2; c.goal = 'Ha resbalado hacia los pies de la cama. Súbelo hacia la cabecera.'; },
+  init(S){ S.py=1; },
+  steps(c){ const one=c.n===1;
+    const comun = [
+      auxCount(c.n, one ? 'Si el paciente colabora, basta con 1 auxiliar.' : 'Si no colabora, hacen falta 2 auxiliares, uno a cada lado.'),
+      rutinaIni(),
+      almohadaCab()
+    ];
+    const colab = [
+      {type:'choice', q:'¿Qué le pides al paciente?', ck:'Pide que flexione las rodillas, apoye las plantas y se agarre al cabecero',
+        opts:[
+          {t:'Que flexione las rodillas con las plantas de los pies apoyadas en la cama y, si puede, que se agarre al cabecero', ok:true},
+          {t:'Que estire las piernas y se relaje', fb:'Necesitas que haga palanca: rodillas flexionadas y plantas apoyadas.'},
+          {t:'Que se agarre a mi cuello', fb:'Te cargaría su peso en el cuello. Que se agarre al cabecero, si puede.'}
+        ], a:S=>{S.leg={p:'flex',v:'flex'}; S.arm={p:'up',v:'up'}; setAux(S,[['Tú',AX('v'),YY.hips+30]]);}},
+      {type:'choice', q:'¿Qué le explicas antes de empezar?', ck:'Le explica que se impulse con los talones a la señal',
+        opts:[
+          {t:'Que, cuando le dé la señal, se impulse haciendo palanca con los talones', ok:true},
+          {t:'Que empuje con las manos contra el colchón cuando quiera', fb:'Tiene que moverse a la vez que tú, a tu señal, y el impulso sale de los talones.'},
+          {t:'Nada, para que no se ponga nervioso', fb:'Si sabe qué hacer, el esfuerzo es menor para los dos. Explícale que se impulse con los talones a tu señal.'}
+        ]},
+      posture(),
+      {type:'choice', q:'¿Dónde pones las manos?', ck:'Una mano bajo la espalda y otra bajo los glúteos',
+        opts:[
+          {t:'Una mano bajo su espalda y la otra bajo los glúteos', ok:true},
+          {t:'Lo sujeto por las axilas y tiro hacia arriba', danger:true, fb:'Error frecuente: tirar de las axilas o los brazos puede lesionarle los hombros.'},
+          {t:'Una mano en la nuca y otra en los tobillos', fb:'Así no ayudas a desplazar el peso. Una mano bajo la espalda y otra bajo los glúteos.'}
+        ]},
+      {type:'choice', q:'¿Cómo lo subes?', ck:'A la señal, le ayuda a deslizarse hacia la cabecera',
+        opts:[
+          {t:'Doy la señal y le ayudo a deslizarse hacia la cabecera mientras se impulsa', ok:true},
+          {t:'Lo arrastro yo sin avisarle', fb:'Error frecuente: moverse sin una señal común. Él debe impulsarse a la vez que tú.'}
+        ], a:S=>{S.py=0}}
+    ];
+    const nocolab = [
+      {type:'choice', q:'¿Cómo os colocáis?', ck:'Un auxiliar a cada lado, piernas flexionadas y orientadas hacia la cabecera',
+        opts:[
+          {t:'Uno a cada lado de la cama, con las piernas ligeramente flexionadas, una delante de la otra y orientadas hacia la cabecera', ok:true},
+          {t:'Los dos en el mismo lado', fb:'Desde un solo lado, el cuerpo se ladea. Uno a cada lado.'},
+          {t:'Uno en la cabecera tirando de los brazos y otro empujando desde los pies', danger:true, fb:'Tirar de los brazos puede lesionar los hombros. Uno a cada lado de la cama.'}
+        ], a:S=>setAux(S,[['A1',AX('p'),YY.chest+20],['A2',AX('v'),YY.chest+20]])},
+      posture(),
+      {type:'choice', q:'¿Cómo lo sujetáis?', ck:'Sujeción bajo cuello, hombro y zona lumbar (o entremetida)',
+        opts:[
+          {t:'Los dos lo sujetamos por debajo del cuello, el hombro y la zona lumbar', ok:true, fb:'Correcto. También podéis usar una entremetida, que facilita el deslizamiento.'},
+          {t:'Usamos una entremetida: cada uno la sujeta por su lado y lo deslizamos sobre ella', ok:true, fb:'Es la opción más fácil con un paciente que no colabora: se desliza sin levantarlo.', a:S=>{S.entre=true}},
+          {t:'Cada uno lo agarra de un brazo', danger:true, fb:'Error frecuente: tirar de los brazos o de las axilas.'}
+        ]},
+      {type:'choice', q:'¿Cómo lo desplazáis?', ck:'Uno da la señal y se mueven a la vez hacia la cabecera',
+        opts:[
+          {t:'Uno da la señal y lo desplazamos a la vez hacia la cabecera', ok:true},
+          {t:'Cada uno tira cuando puede', fb:'Error frecuente: moverse sin una señal común. El cuerpo se tuerce.'}
+        ], a:S=>{S.py=0}}
+    ];
+    const fin = [
+      {type:'choice', ctx:'Ya está a la altura correcta.', q:'¿Qué haces con la almohada?', ck:'Coloca la almohada bajo la cabeza',
+        opts:[
+          {t:'Se la coloco bajo la cabeza', ok:true},
+          {t:'La dejo en el cabecero por si vuelve a resbalar', fb:'Ya no hace falta allí: colócala bajo su cabeza y acomódalo.'}
+        ], a:S=>{S.pillow='head'; S.leg={p:'straight',v:'straight'}; S.arm={p:'side',v:'side'}; S.entre=false;}},
+      rutinaFin()
+    ];
+    return comun.concat(one?colab:nocolab, fin);
+  }
+},
+{ id:4, cat:'Preparación para levantarse', name:'Sentar en la orilla', para:'Paso previo a caminar o a pasar al sillón o la silla de ruedas.', personal:'1 auxiliar', variants:false,
+  clave:['Elevar y girar es un único movimiento: el cuerpo pivota sobre los glúteos.','Quédate delante del paciente mientras está sentado: puede perder el equilibrio.','Si se marea, palidece o suda, vuelve a acostarlo y avisa a la enfermera/o.'],
+  errores:['Dejarlo solo sentado en el borde.','Separar el movimiento en dos tiempos.','Continuar sin comprobar si se marea.'],
+  aula:'En una silla o banco: ensayad la presa (un brazo tras la cabeza hasta el hombro alejado y otro sobre las rodillas) y el giro sobre los glúteos. El observador comprueba que el auxiliar se queda delante.',
+  setup(c){ c.n=1; c.colabTxt='Colabora un poco: se mueve si le ayudas.'; c.goal=`Sentarlo en la orilla de la cama, por el lado de la ${nm(c.side)}.`; },
+  init(S){ setAux(S,[['Tú',DOOR[0][0],DOOR[0][1]]]); },
+  steps(c){ const E=c.side; return [
+    rutinaIni(),
+    almohadaCab(),
+    {type:'choice', q:'Primer paso de la ejecución:', ck:'Acerca al paciente a la orilla por la que se va a sentar',
+      opts:[
+        {t:`Lo acerco a la orilla de la ${nm(E)}, por la que se va a sentar`, ok:true, fb:'Con la técnica de la ficha 1.'},
+        {t:`Lo acerco a la orilla de la ${nm(opp(E))}`, fb:'Tiene que ir a la orilla por la que se va a sentar.'},
+        {t:'Lo siento desde el centro de la cama', fb:'Desde el centro sus piernas no llegan al borde y tendrías que cargar con su peso.'}
+      ], a:S=>{S.px=sg(E); setAux(S,[['Tú',AX(E),YY.hips]]);}},
+    {type:'choice', q:'¿Qué haces con la cama?', ck:'Eleva la cabecera hasta Fowler',
+      opts:[
+        {t:'Elevo la cabecera hasta la posición de Fowler', ok:true, fb:'Semisentado, el giro cuesta mucho menos.'},
+        {t:'La dejo horizontal', fb:'Si elevas la cabecera hasta Fowler, no tienes que levantar tú el tronco del paciente.'},
+        {t:'Le quito el freno para acercarla a la pared', danger:true, fb:'La cama debe estar frenada durante toda la técnica.'}
+      ], a:S=>{S.bedHead='fowler'}},
+    {type:'choice', q:'¿Cómo lo sujetas?', ck:'Un brazo tras la cabeza hasta el hombro alejado; el otro sobre las rodillas',
+      opts:[
+        {t:'Paso un brazo por detrás de su cabeza hasta el hombro más alejado, y el otro por encima de sus rodillas', ok:true},
+        {t:'Lo cojo por las axilas y tiro hacia arriba', danger:true, fb:'Tirar de las axilas puede lesionarle los hombros.'},
+        {t:'Un brazo bajo los glúteos y el otro bajo los pies', fb:'Así no controlas el tronco. Un brazo tras la cabeza hasta el hombro alejado y el otro sobre las rodillas.'}
+      ]},
+    {type:'choice', q:'¿Cómo lo sientas?', ck:'Eleva y gira en un solo movimiento',
+      opts:[
+        {t:'En un solo movimiento, elevo y giro su cuerpo hasta dejarlo sentado con las piernas colgando', ok:true, fb:'El cuerpo pivota sobre los glúteos.'},
+        {t:'Primero lo incorporo y después, en otro movimiento, le bajo las piernas', fb:'Elevar y girar es un único movimiento: el cuerpo pivota sobre los glúteos.'},
+        {t:'Le pido que se siente solo mientras preparo la bata', danger:true, fb:'Necesita tu ayuda y tu presencia: puede perder el equilibrio.'}
+      ], a:S=>{S.pose='sentado'; S.sitSide=E; setAux(S,[['Tú',220+sg(E)*118,YY.head]]);}},
+    {type:'choice', ctx:'Ya está sentado en el borde.', q:'¿Dónde te colocas?', ck:'Se queda delante del paciente mientras está sentado',
+      opts:[
+        {t:'Delante de él, porque puede perder el equilibrio', ok:true},
+        {t:'Voy al armario a por la bata y las zapatillas', danger:true, fb:'No lo dejes solo en el borde: puede perder el equilibrio. Ten el material preparado antes de empezar.'},
+        {t:'Me subo a la cama, detrás de él', fb:'Desde detrás no puedes frenar una caída hacia delante. Ponte delante.'}
+      ], a:S=>setAux(S,[['Tú',220+sg(E)*162,240]])},
+    {type:'choice', q:'¿Qué haces ahora?', ck:'Le ayuda a ponerse la bata y las zapatillas',
+      opts:[
+        {t:'Le ayudo a ponerse la bata y las zapatillas', ok:true},
+        {t:'Lo pongo de pie descalzo, que luego se las pone', danger:true, fb:'Descalzo puede resbalar. Primero la bata y las zapatillas.'},
+        {t:'Lo dejo en pijama, la bata no hace falta', fb:'La bata preserva su intimidad y le abriga; las zapatillas evitan resbalones.'}
+      ], a:S=>{S.gown=true}},
+    c.dizzy ?
+    {type:'choice', ctx:`${c.p.f} dice que está mareado. Lo notas pálido y sudoroso.`, q:'¿Qué haces?', ck:'Comprueba que no se marea; si se marea, lo acuesta y avisa',
+      opts:[
+        {t:'Lo vuelvo a acostar y aviso a la enfermera/o', ok:true, fb:'Tras mucho tiempo tumbado, al incorporarse le puede bajar la tensión arterial.'},
+        {t:'Lo pongo de pie para que se active', danger:true, fb:'Podría desmayarse y caer. Vuelve a acostarlo y avisa a la enfermera/o.'},
+        {t:'Le doy un vaso de agua y seguimos', fb:'Mareo, palidez y sudor indican que hay que parar: vuelve a acostarlo y avisa.'}
+      ], a:S=>{S.pose='supino'; S.px=sg(E); setAux(S,[['Tú',AX(E),YY.hips]]);}}
+    :
+    {type:'choice', q:'Antes de continuar con cualquier otro paso, ¿qué compruebas?', ck:'Comprueba que no se marea; si se marea, lo acuesta y avisa',
+      opts:[
+        {t:'Que no se marea: le pregunto y observo si está pálido o sudoroso', ok:true, fb:'Al incorporarse tras mucho tiempo tumbado puede bajarle la tensión arterial.'},
+        {t:'Que tiene los brazos cruzados', fb:'Lo que hay que vigilar ahora es si se marea.'},
+        {t:'Nada, ya está sentado', fb:'Tras estar tumbado puede bajarle la tensión. Comprueba que no se marea.'}
+      ]},
+    cierre()
+  ];}
+},
+{ id:5, cat:'Traslado', name:'Cama a silla de ruedas', para:'Levantar al paciente de la cama y sentarlo en el sillón o la silla de ruedas.', personal:'1 auxiliar · 2 si no colabora', variants:true,
+  clave:['La silla de ruedas siempre frenada antes de mover al paciente.','Reposapiés levantados durante el traslado y bajados al terminar.','Para volver a la cama se siguen los mismos pasos en orden inverso.'],
+  errores:['Colocar la silla lejos de la cama: obliga a cargar el peso.','Girar retorciendo la cintura en lugar de mover los pies.'],
+  aula:'Se reproduce casi igual con dos sillas: una hace de cama (el paciente ya sentado en el borde) y otra de silla de ruedas, a la altura de los pies. Si el centro tiene una silla de ruedas, mejor.',
+  setup(c){ c.n = c.colab?1:2; c.goal=`Pasarlo de la cama a la silla de ruedas, por el lado de la ${nm(c.side)}.`; },
+  init(S){ S.chair={x:410, y:522, r:90, brake:false, foot:'down', noArm:0}; },
+  steps(c){ const E=c.side, s=sg(E);
+    if (c.colab) return [
+      auxCount(1, 'Si el paciente colabora, basta con 1 auxiliar.'),
+      rutinaIni(),
+      {type:'choice', q:'¿Dónde colocas la silla de ruedas?', ck:'Coloca la silla junto a la cama, a la altura de los pies',
+        opts:[
+          {t:`Junto a la cama, en el lado de la ${nm(E)}, a la altura de los pies`, ok:true},
+          {t:'Donde está, al fondo de la habitación', danger:true, fb:'Error frecuente: con la silla lejos tendrás que cargar con su peso.'},
+          {t:`En el lado de la ${nm(opp(E))}`, fb:'La silla va en el lado por el que se va a sentar y levantar.'}
+        ], a:S=>{S.chair=Object.assign(S.chair,{x:220+s*130, y:372, r:180-30*s});}},
+      {type:'choice', q:'Antes de mover al paciente, ¿qué haces con la silla?', ck:'Frena la silla y levanta los reposapiés',
+        opts:[
+          {t:'La freno y levanto los reposapiés', ok:true},
+          {t:'Nada, ya está en su sitio', danger:true, fb:'La silla de ruedas siempre se frena antes de mover al paciente.'},
+          {t:'Bajo los reposapiés para que apoye los pies al girar', fb:'Los reposapiés van levantados durante el traslado, para que no tropiece. Se bajan al terminar.'}
+        ], a:S=>{S.chair.brake=true; S.chair.foot='up';}},
+      {type:'choice', q:'¿Cuál es el paso previo?', ck:'Sienta al paciente en la orilla (ficha 4)',
+        opts:[
+          {t:'Sentarlo en la orilla de la cama (ficha 4)', ok:true},
+          {t:'Levantarlo directamente desde tumbado', danger:true, fb:'Primero debe sentarse en la orilla: es el paso previo al traslado.'}
+        ], a:(S,later)=>{S.px=s; S.bedHead='fowler'; S.pillow='headboard'; setAux(S,[['Tú',AX(E),YY.hips]]);
+          later(()=>{S.pose='sentado'; S.sitSide=E; setAux(S,[['Tú',220+s*162,226]]);}, 950);}},
+      {type:'choice', q:'Ya está sentado. ¿Y ahora?', ck:'Comprueba que no se marea y le pone bata y zapatillas',
+        opts:[
+          {t:'Compruebo que no se marea y le pongo la bata y las zapatillas', ok:true},
+          {t:'Lo levanto enseguida, ahora que está despierto', danger:true, fb:'Primero comprueba que no se marea y ponle bata y zapatillas.'}
+        ], a:S=>{S.gown=true}},
+      posture('Te colocas frente a él. ¿Qué postura adoptas?'),
+      {type:'choice', q:'¿Cómo lo sujetas?', ck:'Lo sujeta por la cintura; el paciente se apoya en sus hombros o cuello',
+        opts:[
+          {t:'Por la cintura con las dos manos; él se apoya en mis hombros o me rodea el cuello', ok:true},
+          {t:'Tiro de sus manos para levantarlo', danger:true, fb:'Tirar de las manos lo desequilibra y te carga la espalda. Sujétalo por la cintura.'},
+          {t:'Me pongo detrás y lo sujeto por las axilas', fb:'Esa es la técnica con 2 auxiliares para un paciente que no colabora.'}
+        ]},
+      {type:'choice', q:'¿Dónde quedan vuestras rodillas?', ck:'Rodillas muy próximas a las del paciente',
+        opts:[
+          {t:'Muy próximas: así lo controlo si se le doblan las piernas', ok:true},
+          {t:'Separadas, para dejarle sitio', fb:'Si se le doblan las piernas no podrías sujetarlo. Tus rodillas deben quedar muy próximas a las suyas.'}
+        ]},
+      {type:'choice', q:'Se pone de pie. ¿Cómo lo llevas a la silla?', ck:'Gira a la vez que el paciente moviendo los pies, sin torcer la cintura',
+        opts:[
+          {t:'Giro a la vez que él, moviendo los pies, hasta dejarlo delante de la silla, y lo siento', ok:true},
+          {t:'Giro la cintura con los pies quietos', danger:true, fb:'Error frecuente: gira con los pies, nunca retorciendo la cintura.'},
+          {t:'Lo suelto y le pido que se siente él', danger:true, fb:'No lo sueltes hasta que esté sentado y acomodado.'}
+        ], a:S=>{S.pose='silla'; const ch=S.chair, r=ch.r*Math.PI/180; setAux(S,[['Tú', ch.x - Math.sin(r)*66, ch.y + Math.cos(r)*66]]);}},
+      {type:'choice', ctx:'Ya está en la silla.', q:'¿Qué te falta?', ck:'Baja los reposapiés y acomoda al paciente (manta si hace falta)',
+        opts:[
+          {t:'Bajo los reposapiés, apoyo sus pies y lo acomodo; si hace falta, lo tapo con una manta', ok:true},
+          {t:'Le quito el freno y nos vamos', fb:'Antes, reposapiés bajados con los pies apoyados y el paciente bien acomodado.'}
+        ], a:S=>{S.chair.foot='down'; S.blanket=true;}},
+      cierre()
+    ];
+    return [
+      auxCount(2, 'Si el paciente no colabora, hacen falta 2 auxiliares.'),
+      rutinaIni(),
+      {type:'choice', q:'Primer paso de la ejecución:', ck:'Lleva al paciente a la orilla y eleva la cabecera a Fowler',
+        opts:[
+          {t:`Llevarlo a la orilla de la ${nm(E)} y elevar la cabecera a Fowler`, ok:true},
+          {t:'Sentarlo en el borde con las piernas colgando', danger:true, fb:'Si no colabora, no se mantendrá sentado. Se traslada desde Fowler, en la orilla.'},
+          {t:'Dejarlo en el centro de la cama', fb:'Tiene que estar en la orilla, lo más cerca posible de la silla.'}
+        ], a:S=>{S.px=s; S.bedHead='fowler'; S.pillow='headboard'; setAux(S,[['A1',AX(E),YY.chest],['A2',AX(E),YY.thighs+20]]);}},
+      {type:'multi', q:'Prepara la silla de ruedas. Marca todo lo que haces.', ck:'Silla paralela y pegada, respaldo a la cabecera, sin reposabrazos del lado de la cama, reposapiés arriba y frenada',
+        items:[{t:'Paralela y pegada a la cama', ok:true},{t:'Con el respaldo hacia la cabecera', ok:true},{t:'Quito el reposabrazos del lado de la cama', ok:true},{t:'Levanto los reposapiés', ok:true},{t:'La freno', ok:true},{t:'La dejo a un metro, para tener sitio'},{t:'Con el respaldo hacia los pies de la cama'}],
+        fb:'Silla preparada: pegada, sin obstáculos y frenada.',
+        a:S=>{S.chair={x:220+s*124, y:282, r:0, brake:true, foot:'up', noArm:-s}; setAux(S,[['A1',220+s*124,206],['A2',220+s*124,360]]);}},
+      {type:'choice', q:'¿Cómo os colocáis?', ck:'Aux. 1 detrás del respaldo; Aux. 2 frente al paciente, en la misma orilla',
+        opts:[
+          {t:'Aux. 1 detrás del respaldo de la silla; Aux. 2 frente al paciente, en la misma orilla de la cama', ok:true},
+          {t:'Uno a cada lado de la cama', fb:'Los dos trabajáis en la orilla de la silla: uno detrás del respaldo y otro frente al paciente.'}
+        ]},
+      {type:'choice', q:'¿Qué hace el Aux. 1?', ck:'Aux. 1: brazos bajo las axilas, sujeta la parte inferior de los antebrazos cruzados',
+        opts:[
+          {t:'Pasa sus brazos bajo las axilas del paciente, que tiene los antebrazos cruzados sobre el tórax, y lo sujeta por la parte inferior de los antebrazos', ok:true},
+          {t:'Lo sujeta por las muñecas y tira', danger:true, fb:'Tirar de las muñecas puede lesionar al paciente. Pasa los brazos bajo sus axilas y sujeta sus antebrazos cruzados.'}
+        ], a:S=>{S.arm={p:'cross',v:'cross'}}},
+      {type:'choice', q:'¿Y el Aux. 2?', ck:'Aux. 2: lo sujeta por debajo de los muslos',
+        opts:[
+          {t:'Lo sujeta por debajo de los muslos', ok:true},
+          {t:'Lo sujeta por los tobillos', fb:'Desde los tobillos no soporta el peso. El Aux. 2 sujeta por debajo de los muslos.'}
+        ]},
+      posture(),
+      {type:'choice', q:'¿Cómo lo pasáis a la silla?', ck:'Movimiento simultáneo a la señal',
+        opts:[
+          {t:'A la señal, en un movimiento simultáneo, lo pasamos a la silla', ok:true},
+          {t:'Tira primero el Aux. 1 y luego acompaña el Aux. 2', fb:'Si no os movéis a la vez, el cuerpo se dobla. Uno da la señal y os movéis juntos.'}
+        ], a:S=>{S.pose='silla'}},
+      {type:'choice', ctx:'Ya está en la silla.', q:'¿Qué te falta?', ck:'Coloca bien los reposapiés y lo tapa con una manta si hace falta',
+        opts:[
+          {t:'Coloco bien los reposapiés y, si hace falta, lo tapo con una manta', ok:true},
+          {t:'Lo dejo con los pies colgando', fb:'Los reposapiés se bajan y sus pies quedan apoyados.'}
+        ], a:S=>{S.chair.foot='down'; S.blanket=true; S.arm={p:'side',v:'side'};}},
+      cierre()
+    ];
+  }
+},
+{ id:6, cat:'Traslado', name:'Cama a camilla', para:'Trasladar al paciente tumbado, por ejemplo a una prueba o al quirófano.', personal:'1 auxiliar · 3 si no colabora', variants:true,
+  clave:['Cama y camilla siempre frenadas.','Uno da la señal y todos se mueven a la vez.','La posición perpendicular acorta el recorrido: los auxiliares solo giran sobre sus pies.'],
+  errores:['Olvidar frenar la camilla: se desplaza durante el traslado.','Repartir mal el peso entre los tres auxiliares o no actuar a la vez.','Dejar caer al paciente sobre la camilla en lugar de apoyarlo con suavidad.'],
+  aula:'Sobre colchoneta, con una sábana. Los tres ensayan las presas, la señal y el giro sobre los pies; levantad solo unos centímetros y siempre con el docente delante.',
+  setup(c){ c.n = c.colab?1:3; if(!c.colab) c.side='v'; c.goal='Pasarlo de la cama a la camilla para llevarlo a una prueba.'; },
+  init(S){ S.str={x:330, y:540, r:-90, brake:false}; },
+  steps(c){ const E=c.side, s=sg(E);
+    if (c.colab) return [
+      auxCount(1, 'Si el paciente colabora, basta con 1 auxiliar.'),
+      rutinaIni(),
+      {type:'choice', q:'¿Cómo colocas la camilla?', ck:'Camilla paralela a la cama y las dos frenadas',
+        opts:[
+          {t:`Paralela a la cama, pegada por el lado de la ${nm(E)}, y freno las dos`, ok:true},
+          {t:'Paralela, pero solo freno la cama', danger:true, fb:'Error frecuente: si la camilla no está frenada, se desplaza durante el traslado.'},
+          {t:'Perpendicular, a los pies de la cama', fb:'Si el paciente colabora, la camilla va paralela, para que pueda deslizarse él.'}
+        ], a:S=>{S.str={x:220+s*124, y:240, r:0, brake:true}; setAux(S,[['Tú',220+s*186,YY.hips]]);}},
+      {type:'choice', q:'¿Cómo pasa a la camilla?', ck:'El paciente se desliza a la camilla mientras le ayuda',
+        opts:[
+          {t:'Le pido que se deslice hasta la camilla mientras le ayudo', ok:true},
+          {t:'Lo levanto en brazos y lo paso', danger:true, fb:'Si puede colaborar, que se deslice él: tú solo le ayudas. Nunca cargues el peso tú solo.'},
+          {t:'Le pido que se siente en la camilla y luego se tumbe', fb:'Pasa tumbado, deslizándose de la cama a la camilla, sin incorporarse.'}
+        ], a:S=>{S.covered=false; S.pillow='off'; S.pose='camilla';}},
+      {type:'choice', q:'Ya está en la camilla.', ck:'Lo tapa y lo acomoda',
+        opts:[
+          {t:'Lo tapo y lo acomodo', ok:true},
+          {t:'Lo dejo destapado: el trayecto es corto', fb:'Tápalo: preserva su intimidad y evita que pase frío.'}
+        ], a:S=>{S.covered=true}},
+      cierre()
+    ];
+    return [
+      auxCount(3, 'Si el paciente no colabora, hacen falta al menos 3 personas.'),
+      rutinaIni(),
+      {type:'choice', q:'¿Cómo colocas la camilla?', ck:'Camilla perpendicular a la cama',
+        opts:[
+          {t:'Perpendicular a la cama: los pies de la cama tocando la cabecera de la camilla', ok:true, fb:'También vale al revés: cabecera de la cama con los pies de la camilla.'},
+          {t:'Paralela y pegada a la cama', fb:'Con un paciente que no colabora se coloca perpendicular: así el recorrido es más corto y solo tenéis que girar sobre los pies.'},
+          {t:'En el pasillo, para tener más espacio', fb:'Lejos de la cama tendríais que cargar con él más tiempo. Perpendicular y tocando la cama.'}
+        ], a:S=>{S.str={x:330, y:466, r:-90, brake:false};}},
+      {type:'choice', q:'¿Qué haces antes de tocar al paciente?', ck:'Frena la cama y la camilla',
+        opts:[
+          {t:'Freno la cama y la camilla', ok:true},
+          {t:'Freno solo la camilla', fb:'Las dos tienen que estar frenadas.'},
+          {t:'Nada, la camilla ya está pegada a la cama', danger:true, fb:'Error frecuente: sin freno, la camilla se desplaza durante el traslado.'}
+        ], a:S=>{S.str.brake=true; S.brake=true;}},
+      {type:'choice', q:'Preparas al paciente:', ck:'Lo destapa, cruza sus brazos sobre el tórax y retira la almohada',
+        opts:[
+          {t:'Lo destapo, cruzo sus brazos sobre el tórax y retiro la almohada', ok:true},
+          {t:'Le dejo la almohada para que vaya más cómodo', fb:'La almohada estorba al deslizar los brazos bajo el cuello. Retírala.'}
+        ], a:S=>{S.covered=false; S.arm={p:'cross',v:'cross'}; S.pillow='off';}},
+      {type:'choice', q:'¿Dónde os colocáis los tres?', ck:'Los tres en el mismo lado de la cama',
+        opts:[
+          {t:'Los tres en el mismo lado de la cama', ok:true},
+          {t:'Uno a cada lado y otro a los pies', fb:'Los tres se colocan en el mismo lado, para levantarlo y girar juntos hacia la camilla.'}
+        ], a:S=>setAux(S,[['A1',336,YY.head+8],['A2',336,YY.hips-14],['A3',336,YY.legs-8]])},
+      {type:'order', q:'Asigna las presas de la cabeza a los pies: toca primero la del Aux. 1.', ck:'Presas: cabeza-hombros y cintura / cintura y glúteos / muslos y piernas',
+        items:[
+          {t:'Aux. 1 (el más alto): un brazo bajo el cuello y los hombros, y otro bajo la cintura'},
+          {t:'Aux. 2: un brazo bajo la cintura y otro bajo los glúteos'},
+          {t:'Aux. 3: un brazo bajo los muslos y otro bajo las piernas'}
+        ], wrong:'Esa presa corresponde a otra posición. Empieza por la cabeza.', fb:'Así el peso queda bien repartido entre los tres.'},
+      posture(),
+      {type:'choice', q:'¿Qué hacéis primero?', ck:'Al unísono, llevan al paciente a la orilla',
+        opts:[
+          {t:'Uno da la señal y, al unísono, lo llevamos a la orilla de la cama', ok:true},
+          {t:'Lo levantamos desde el centro de la cama', fb:'Primero a la orilla: así queda pegado a vosotros y el peso está cerca de vuestro cuerpo.'}
+        ], a:S=>{S.px=1}},
+      {type:'choice', q:'¿Cómo lo pasáis a la camilla?', ck:'Traslado simultáneo y lo deposita con suavidad',
+        opts:[
+          {t:'En un movimiento simultáneo, girando sobre los pies, lo trasladamos y lo depositamos con suavidad', ok:true},
+          {t:'Lo dejamos caer sobre la camilla para no cargar tanto rato', danger:true, fb:'Error frecuente: se deposita con suavidad, nunca dejándolo caer.'},
+          {t:'Cada uno lo suelta cuando llega', danger:true, fb:'Si no actuáis a la vez, el peso se reparte mal y el cuerpo se dobla.'}
+        ], a:S=>{S.pose='camilla'; setAux(S,[['A1',284,412],['A2',350,412],['A3',416,412]]);}},
+      {type:'choice', q:'Ya está en la camilla.', ck:'Lo acomoda y lo cubre',
+        opts:[
+          {t:'Lo acomodo y lo cubro con la ropa', ok:true},
+          {t:'Lo dejo destapado: el trayecto es corto', fb:'Cúbrelo: preserva su intimidad y evita que pase frío.'}
+        ], a:S=>{S.covered=true; S.arm={p:'side',v:'side'};}},
+      cierre()
+    ];
+  }
+},
+{ id:7, cat:'Desplazamiento', name:'Ayuda a la deambulación', para:'Acompañar al paciente mientras camina, previniendo caídas.', personal:'1 auxiliar', variants:false,
+  clave:['Vigila signos de alarma: mareo, palidez, sudor, debilidad en las piernas.','Comprueba que el suelo está despejado y seco y que el calzado sujeta bien el pie.','Si se siente mal, detente y ayúdale a sentarse.'],
+  errores:['No revisar el recorrido antes de salir.','Calzado que no sujeta el pie.','Acompañar sin sujetarlo por la cintura.'],
+  aula:'Se hace tal cual, por el aula o el pasillo. Poned un obstáculo y un «charco» de papel en el recorrido para ver si el auxiliar los detecta.',
+  setup(c){ c.n=1; c.side='p'; c.colab=true; c.goal='Acompañarlo a caminar hasta la puerta de la habitación.'; },
+  init(S){ S.hazards=true; S.hasHazards=true; S.biombo='right'; S.chair={x:40, y:392, r:-90, brake:true, foot:'down', noArm:0, rest:true}; setAux(S,[['Tú',DOOR[1][0]+60,DOOR[1][1]]]); },
+  steps(c){ return [
+    rutinaIni(),
+    {type:'choice', q:'¿Cuál es el paso previo?', ck:'Sienta al paciente en la orilla de la cama (ficha 4)',
+      opts:[
+        {t:'Sentarlo en la orilla de la cama (ficha 4)', ok:true},
+        {t:'Pedirle que se levante solo mientras le espero en la puerta', danger:true, fb:'Primero se sienta en la orilla con tu ayuda; luego lo acompañas en todo momento.'}
+      ], a:(S,later)=>{S.px=-1; S.bedHead='fowler'; S.pillow='headboard'; setAux(S,[['Tú',AX('p'),YY.hips]]);
+        later(()=>{S.pose='sentado'; S.sitSide='p'; setAux(S,[['Tú',62,232]]);}, 950);}},
+    {type:'choice', q:'¿Qué le pones?', ck:'Bata y calzado que sujete bien el pie',
+      opts:[
+        {t:'La bata y unas zapatillas que le sujeten bien el pie', ok:true},
+        {t:'Nada en los pies: en calcetines está más cómodo', danger:true, fb:'Los calcetines resbalan. El calzado tiene que sujetar bien el pie.'},
+        {t:'Sus chanclas abiertas, que son las que tiene a mano', fb:'Un calzado que no sujeta el pie favorece los tropiezos.'}
+      ], a:S=>{S.gown=true}},
+    {type:'multi', q:'Antes de levantarlo, mira la habitación. ¿Qué compruebas? Marca todo.', ck:'Comprueba suelo despejado y seco y que no se marea',
+      items:[{t:'Que el suelo está despejado', ok:true},{t:'Que el suelo está seco', ok:true},{t:'Que no se marea al estar sentado', ok:true},{t:'Que la cabecera está en Fowler'},{t:'Que lleva los brazos cruzados'}],
+      fb:'Había agua en el suelo y una caja en el camino: los retiras antes de salir.', a:S=>{S.hazards=false}},
+    {type:'choice', q:'¿Cómo lo pones de pie?', ck:'Lo sujeta por la cintura y le ayuda a ponerse de pie',
+      opts:[
+        {t:'Lo sujeto por la cintura y le ayudo a ponerse de pie', ok:true},
+        {t:'Tiro de sus manos hasta que se levante', danger:true, fb:'Tirar de las manos lo desequilibra hacia ti. Sujétalo por la cintura.'}
+      ], a:S=>{S.pose='pie'; S.ppos={x:92, y:248, r:90}; setAux(S,[['Tú',56,248]]);}},
+    {type:'choice', q:'¿Cómo lo acompañas al caminar?', ck:'A su lado, rodea su cintura; él apoya el brazo en sus hombros',
+      opts:[
+        {t:'A su lado: le rodeo la cintura con un brazo, él apoya el brazo más cercano sobre mis hombros y le sujeto esa mano con mi mano libre', ok:true},
+        {t:'Detrás de él, sin tocarlo, para que gane autonomía', fb:'Así no puedes sujetarlo si pierde el equilibrio. Ve a su lado, sujetándolo por la cintura.'},
+        {t:'Delante, tirando de sus manos', danger:true, fb:'Tirar de él lo desequilibra. Ve a su lado, sujetándolo por la cintura.'}
+      ], a:S=>{S.ppos={x:96, y:262, r:0}; setAux(S,[['Tú',58,262]]);}},
+    {type:'choice', ctx:'Empezáis a caminar hacia la puerta.', q:'¿Qué haces durante el recorrido?', ck:'Vigila signos de alarma durante todo el recorrido',
+      opts:[
+        {t:'Observo cualquier cambio: mareo, palidez, sudor o debilidad en las piernas', ok:true},
+        {t:'Le doy conversación y miro el móvil por si me llaman', fb:'Tu atención tiene que estar en él durante todo el recorrido.'},
+        {t:'Acelero el paso para que no se canse', danger:true, fb:'Al ritmo del paciente. Ir deprisa aumenta el riesgo de caída.'}
+      ], a:S=>{S.slow=true; S.ppos={x:96, y:c.dizzy?360:470, r:0}; setAux(S,[['Tú',58,c.dizzy?360:470]]);}},
+    c.dizzy ?
+    {type:'choice', ctx:`A mitad de camino, ${c.p.f} dice que le flojean las piernas. Está sudoroso.`, q:'¿Qué haces?', ck:'Si se siente mal, se detiene y le ayuda a sentarse',
+      opts:[
+        {t:'Me detengo y le ayudo a sentarse en la silla', ok:true, fb:'Una vez sentado y seguro, avisa a la enfermera/o.'},
+        {t:'Aceleramos para llegar antes a la cama', danger:true, fb:'Con las piernas débiles puede caer. Detente y ayúdale a sentarse.'},
+        {t:'Lo dejo apoyado en la pared y voy a buscar ayuda', danger:true, fb:'No lo sueltes: detente y ayúdale a sentarse antes de pedir ayuda.'}
+      ], a:S=>{S.slow=false; S.pose='silla'; setAux(S,[['Tú',104,404]]);}}
+    :
+    {type:'choice', ctx:'Llegáis a la puerta sin problemas.', q:'Quiere volver a la cama. ¿Cómo sigues?', ck:'Lo acompaña durante todo el recorrido',
+      opts:[
+        {t:'Volvemos igual: a su lado, sujetándolo por la cintura, hasta que esté sentado en la cama', ok:true},
+        {t:'Ya conoce el camino: dejo que vuelva solo', danger:true, fb:'Acompáñalo durante todo el recorrido, observando cualquier cambio.'}
+      ], a:(S,later)=>{S.slow=true; S.ppos={x:96, y:262, r:180}; setAux(S,[['Tú',58,262]]);
+        later(()=>{S.slow=false; S.pose='sentado'; S.sitSide='p'; setAux(S,[['Tú',62,232]]);}, 2300);}},
+    cierre()
+  ];}
+}
+];
+
+/* ---------- dibujo ---------- */
+const limb = (pts, w, cls='limb') => `<path d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1]).join(' L')}" class="${cls}" stroke-width="${w}"/>`;
+function arm(side, mode){
+  const k=sg(side);
+  const P={side:[[36,-96],[38,-10]], tight:[[30,-96],[30,-10]], out:[[36,-96],[84,-44]], flex:[[36,-96],[38,-52],[8,-40]],
+           cross:[[34,-96],[30,-68],[-20,-80]], up:[[36,-96],[42,-140],[36,-184]]}[mode] || [[36,-96],[38,-10]];
+  const pts=P.map(([x,y])=>[x*k,y]); const e=pts[pts.length-1];
+  return limb(pts,13)+`<circle cx="${e[0]}" cy="${e[1]}" r="6.5" class="skin"/>`;
+}
+function leg(side, mode, prone){
+  const k=sg(side);
+  const P={straight:[[13,0],[14,124]], flex:[[13,0],[21,62],[18,92]], cross:[[13,0],[-10,116]]}[mode] || [[13,0],[14,124]];
+  const pts=P.map(([x,y])=>[x*k,y]); const e=pts[pts.length-1];
+  let h=limb(pts,20);
+  if(mode==='flex') h+=`<circle cx="${21*k}" cy="62" r="9" class="knee"/>`;
+  h+=`<ellipse cx="${e[0]}" cy="${e[1]+9}" rx="7" ry="9" class="${prone?'skin':'skin'}"/>`;
+  return h;
+}
+function sheet(w){ return `<rect x="${-w/2}" y="-94" width="${w}" height="246" rx="12" class="sheet"/><rect x="${-w/2}" y="-94" width="${w}" height="16" rx="8" class="sheetFold"/>`; }
+function supine(S){
+  let h='';
+  if(S.entre) h+=`<rect x="-62" y="-104" width="124" height="150" rx="6" class="entre"/>`;
+  const legs=['p','v'].sort((a,b)=>(S.leg[a]==='cross')-(S.leg[b]==='cross'));
+  legs.forEach(s=>{ if(S.leg[s]!=='cross') h+=leg(s,S.leg[s]); });
+  h+=`<rect x="-30" y="-112" width="60" height="120" rx="22" class="gown"/>`;
+  legs.forEach(s=>{ if(S.leg[s]==='cross') h+=leg(s,'cross'); });
+  if(S.covered) h+=sheet(108);
+  h+=arm('p',S.arm.p)+arm('v',S.arm.v);
+  h+=`<circle cx="0" cy="-128" r="16" class="skin"/><ellipse cx="0" cy="-139" rx="14.5" ry="7.5" class="hair"/>
+      <circle cx="-5.5" cy="-127" r="1.7" class="eye"/><circle cx="5.5" cy="-127" r="1.7" class="eye"/>`;
+  return h;
+}
+function prone(S){
+  let h=leg('p','straight',true)+leg('v','straight',true);
+  h+=`<rect x="-30" y="-112" width="60" height="120" rx="22" class="gown"/><path d="M0 -104 L0 -2" class="spine"/>
+      <path d="M-18 -92 Q-12 -80 -4 -84 M18 -92 Q12 -80 4 -84" class="spine"/>`;
+  if(S.covered) h+=sheet(108);
+  h+=arm('p','side')+arm('v','side');
+  h+=`<circle cx="0" cy="-128" r="16" class="hair"/>`;
+  if(S.headTurn){ const k=sg(S.headTurn); h+=`<ellipse cx="${k*11}" cy="-127" rx="6" ry="11" class="skin"/><circle cx="${k*13}" cy="-131" r="1.6" class="eye"/>`; }
+  return h;
+}
+function lateral(S){
+  const k=sg(S.facing), sup=S.pillow==='supports';
+  let h='';
+  if(sup) h+=`<rect x="${-k*33-9}" y="-104" width="18" height="104" rx="8" class="pillow"/>`;
+  h+=limb([[0,2],[-k*2,122]],20)+`<ellipse cx="${-k*2}" cy="131" rx="7" ry="9" class="skin"/>`;
+  if(sup) h+=`<rect x="${k*16-11}" y="30" width="22" height="64" rx="9" class="pillow"/>`;
+  h+=`<rect x="-19" y="-112" width="38" height="120" rx="17" class="gown"/>`;
+  h+=limb([[k*6,2],[k*30,58],[k*24,106]],20)+`<circle cx="${k*30}" cy="58" r="9" class="knee"/><ellipse cx="${k*24}" cy="115" rx="7" ry="9" class="skin"/>`;
+  if(S.covered) h+=`<rect x="-42" y="-94" width="84" height="236" rx="16" class="sheet"/><rect x="-42" y="-94" width="84" height="16" rx="8" class="sheetFold"/>`;
+  h+=limb([[k*8,-98],[k*44,-84]],13)+`<circle cx="${k*48}" cy="-82" r="6.5" class="skin"/>`;
+  if(sup) h+=`<rect x="${k*38-13}" y="-74" width="26" height="54" rx="10" class="pillow"/>`;
+  h+=limb([[k*12,-98],[k*30,-58],[k*36,-26]],13)+`<circle cx="${k*36}" cy="-22" r="6.5" class="skin"/>`;
+  h+=`<circle cx="0" cy="-128" r="16" class="skin"/>
+      <path d="M0 -144 A16 16 0 0 ${k>0?0:1} 0 -112 Z" class="hair"/>
+      <circle cx="${k*16}" cy="-126" r="3.6" class="skin"/><circle cx="${k*9}" cy="-131" r="1.7" class="eye"/>`;
+  return h;
+}
+function seated(S){
+  const cross=S.arm.p==='cross';
+  const foot=S.gown?'slipper':'skin';
+  let h='';
+  h+=limb([[-12,4],[-13,50]],18)+limb([[12,4],[13,50]],18);
+  h+=limb([[-13,50],[-13,66]],16,'limbDark')+limb([[13,50],[13,66]],16,'limbDark');
+  h+=`<ellipse cx="-13" cy="72" rx="7" ry="9" class="${foot}"/><ellipse cx="13" cy="72" rx="7" ry="9" class="${foot}"/>`;
+  h+=`<rect x="-24" y="-12" width="48" height="26" rx="11" class="gown"/>`;
+  if(S.blanket) h+=`<rect x="-28" y="2" width="56" height="58" rx="9" class="blanket"/>`;
+  h+=`<ellipse cx="0" cy="-6" rx="30" ry="13" class="gown"/>`;
+  h+= cross ? limb([[-27,-4],[-8,12],[14,4]],11)+limb([[27,-4],[8,12],[-14,4]],11)
+            : limb([[-29,-2],[-22,24]],11)+limb([[29,-2],[22,24]],11)+`<circle cx="-22" cy="27" r="6" class="skin"/><circle cx="22" cy="27" r="6" class="skin"/>`;
+  h+=`<circle cx="0" cy="-8" r="13.5" class="hair"/><ellipse cx="0" cy="3" rx="8" ry="4.5" class="skin"/>`;
+  return h;
+}
+function standing(S){
+  const foot=S.gown?'slipper':'skin';
+  return `<ellipse cx="-9" cy="15" rx="6.5" ry="9" class="${foot}"/><ellipse cx="9" cy="15" rx="6.5" ry="9" class="${foot}"/>
+    <ellipse cx="0" cy="0" rx="25" ry="11.5" class="gown"/>
+    <circle cx="-26" cy="4" r="6" class="skin"/><circle cx="26" cy="4" r="6" class="skin"/>
+    <circle cx="0" cy="-1" r="12.5" class="hair"/><ellipse cx="0" cy="9" rx="7" ry="3.8" class="skin"/>`;
+}
+function drawPatient(S){
+  if(S.pose==='supino'||S.pose==='camilla') return supine(S);
+  if(S.pose==='prono') return prone(S);
+  if(S.pose==='lateral') return lateral(S);
+  if(S.pose==='sentado'||S.pose==='silla') return seated(S);
+  return standing(S);
+}
+function patientXf(S){
+  switch(S.pose){
+    case 'sentado': return {x:220+sg(S.sitSide)*50, y:240, r:S.sitSide==='v'?-90:90, s:1};
+    case 'silla': return {x:S.chair.x, y:S.chair.y, r:S.chair.r, s:.92};
+    case 'camilla': return {x:S.str.x, y:S.str.y, r:S.str.r, s:.82};
+    case 'pie': return {x:S.ppos.x, y:S.ppos.y, r:S.ppos.r||0, s:1};
+    default: return {x:220+S.px*38, y:S.py?258:222, r:0, s:1};
+  }
+}
+function chairSVG(ch){
+  let h=`<rect x="-37" y="-26" width="9" height="48" rx="3" class="tire"/><rect x="28" y="-26" width="9" height="48" rx="3" class="tire"/>
+    <rect x="-27" y="-24" width="54" height="48" rx="7" class="seat"/><rect x="-30" y="-34" width="60" height="10" rx="4" class="seatDark"/>`;
+  if(ch.noArm!==-1) h+=`<rect x="-31" y="-20" width="6" height="34" rx="2" class="seatDark"/>`;
+  if(ch.noArm!==1) h+=`<rect x="25" y="-20" width="6" height="34" rx="2" class="seatDark"/>`;
+  if(!ch.rest){
+    h += ch.foot==='down'
+      ? `<rect x="-21" y="30" width="17" height="12" rx="3" class="seatDark"/><rect x="4" y="30" width="17" height="12" rx="3" class="seatDark"/><path d="M-13 24 L-13 30 M13 24 L13 30" class="spine"/>`
+      : `<rect x="-19" y="26" width="14" height="4" rx="2" class="seatDark"/><rect x="5" y="26" width="14" height="4" rx="2" class="seatDark"/>`;
+    if(ch.brake) h+=`<circle cx="-33" cy="-34" r="9" class="badge"/><text x="-33" y="-30.5" class="badgeT">F</text>`;
+  }
+  return h;
+}
+function strSVG(st){
+  let h=`<rect x="-42" y="-122" width="8" height="18" rx="3" class="tire"/><rect x="34" y="-122" width="8" height="18" rx="3" class="tire"/>
+    <rect x="-42" y="104" width="8" height="18" rx="3" class="tire"/><rect x="34" y="104" width="8" height="18" rx="3" class="tire"/>
+    <rect x="-37" y="-132" width="74" height="264" rx="12" class="str"/><rect x="-32" y="-127" width="64" height="254" rx="9" class="strTop"/>`;
+  if(st.brake) h+=`<circle cx="0" cy="118" r="9" class="badge"/><text x="0" y="121.5" class="badgeT">F</text>`;
+  return h;
+}
+function pillowSVG(S){
+  const onBed=['supino','prono','lateral'].includes(S.pose);
+  if((S.pillow==='head'||S.pillow==='supports') && onBed){
+    const t=patientXf(S); return `<rect x="${t.x-44}" y="${t.y-153}" width="88" height="48" rx="14" class="pillow"/>`;
+  }
+  if(S.pillow==='headboard' || ((S.pillow==='head'||S.pillow==='supports') && S.pose==='sentado')) return `<rect x="166" y="72" width="108" height="16" rx="7" class="pillow"/>`;
+  if(S.pillow==='off' || !onBed) return `<rect x="384" y="34" width="68" height="34" rx="11" class="pillow"/>`;
+  return '';
+}
+function xf(x,y,r,s){ return `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`; }
+
+function sceneSVG(){
+  return `<svg id="scene" class="noanim" viewBox="0 0 470 580" role="img" aria-label="Vista desde arriba de la habitación: cama, paciente y auxiliares">
+  <defs><linearGradient id="fowG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--fowler)"/><stop offset="1" style="stop-color:var(--mattress)"/></linearGradient></defs>
+  <rect x="0" y="0" width="470" height="580" class="floor"/>
+  <rect x="3" y="3" width="464" height="574" class="wallLine"/>
+  <rect x="0" y="456" width="9" height="84" class="floor"/>
+  <line x1="6" y1="456" x2="86" y2="456" class="doorLeaf"/><path d="M86 456 A80 80 0 0 1 6 536" class="door"/>
+  <rect x="461" y="110" width="7" height="230" class="window"/>
+  <text x="16" y="446" class="roomLbl">PUERTA</text>
+  <text x="452" y="100" class="roomLbl" text-anchor="end">VENTANA</text>
+  <g id="bed">
+    <rect x="126" y="72" width="8" height="18" rx="3" class="wheel"/><rect x="306" y="72" width="8" height="18" rx="3" class="wheel"/>
+    <rect x="126" y="394" width="8" height="18" rx="3" class="wheel"/><rect x="306" y="394" width="8" height="18" rx="3" class="wheel"/>
+    <rect x="132" y="56" width="176" height="14" rx="5" class="frameDark"/>
+    <rect x="136" y="64" width="168" height="356" rx="10" class="frame"/>
+    <rect x="140" y="70" width="160" height="342" rx="8" class="mattress"/>
+    <rect id="fow" class="fade" x="140" y="70" width="160" height="130" rx="8" style="fill:url(#fowG)"/>
+    <text id="fowT" class="fade bedLbl" x="220" y="194">FOWLER</text>
+    <rect x="132" y="412" width="176" height="12" rx="5" class="frameDark"/>
+    <g id="brakeTag" class="fade"><rect x="170" y="24" width="100" height="22" rx="11" class="tagOk"/><text x="220" y="39" class="tagTxt">CAMA FRENADA</text></g>
+  </g>
+  <g id="hazards" class="fade"></g>
+  <g id="biombo" class="fade"></g>
+  <g id="strW" class="mv"><g id="strIn"></g></g>
+  <g id="chairW" class="mv"><g id="chairIn"></g></g>
+  <g id="pillowL"></g>
+  <g id="patW" class="mv"><g id="patIn"></g></g>
+  <g id="auxL">${[0,1,2].map(i=>`<g id="aux${i}" class="mv" style="opacity:0;transform:translate(${DOOR[i][0]}px,${DOOR[i][1]}px)">
+     <ellipse rx="22" ry="11" class="scrub"/><circle r="10.5" class="auxHead"/>
+     <rect x="-15" y="13" width="30" height="16" rx="8" class="auxTag"/><text y="25" class="auxLbl"></text></g>`).join('')}</g>
+  </svg>`;
+}
+function drawScene(S, instant){
+  const svg=$('#scene'); if(!svg) return;
+  if(instant) svg.classList.add('noanim');
+  const fw=S.bedHead==='fowler'?1:0;
+  $('#fow').style.opacity=fw; $('#fowT').style.opacity=fw;
+  svg.querySelectorAll('.wheel').forEach(w=>w.classList.toggle('on',S.brake));
+  $('#brakeTag').style.opacity=S.brake?1:0;
+  const b=$('#biombo');
+  b.innerHTML = S.biombo==='right'
+    ? `<polyline points="330,556 354,544 378,556 402,544 426,556" class="biombo"/><text x="378" y="538" class="roomLbl" text-anchor="middle">BIOMBO</text>`
+    : `<polyline points="26,440 50,428 74,440 98,428 122,440" class="biombo"/><text x="74" y="420" class="roomLbl" text-anchor="middle">BIOMBO</text>`;
+  b.style.opacity=S.privacy?1:0;
+  const hz=$('#hazards');
+  hz.innerHTML = S.hasHazards ? `<ellipse cx="88" cy="322" rx="24" ry="12" class="puddle"/><rect x="74" y="430" width="30" height="24" rx="3" class="boxH"/>` : '';
+  hz.style.opacity = S.hazards?1:0;
+  $('#pillowL').innerHTML=pillowSVG(S);
+  const dur = S.slow ? '2.2s' : '';
+  const cw=$('#chairW');
+  if(S.chair){ cw.style.opacity=1; cw.style.transform=xf(S.chair.x,S.chair.y,S.chair.r,1); $('#chairIn').innerHTML=chairSVG(S.chair); } else cw.style.opacity=0;
+  const sw=$('#strW');
+  if(S.str){ sw.style.opacity=1; sw.style.transform=xf(S.str.x,S.str.y,S.str.r,1); $('#strIn').innerHTML=strSVG(S.str); } else sw.style.opacity=0;
+  const t=patientXf(S), pw=$('#patW');
+  pw.style.transitionDuration=dur; pw.style.transform=xf(t.x,t.y,t.r,t.s);
+  const sig=JSON.stringify([S.pose,S.facing,S.headTurn,S.arm,S.leg,S.covered,S.gown,S.blanket,S.pillow==='supports',S.entre]);
+  const pin=$('#patIn');
+  pin.setAttribute('class', S.gown?'robe':'');
+  if(pw.dataset.sig!==sig){
+    pw.dataset.sig=sig; pin.innerHTML=drawPatient(S);
+    if(!instant){ pin.classList.remove('pop'); void pin.getBoundingClientRect(); pin.classList.add('pop'); }
+  }
+  for(let i=0;i<3;i++){
+    const el=$('#aux'+i), a=S.aux[i];
+    el.style.transitionDuration=dur;
+    if(a){ el.style.opacity=1; el.style.transform=`translate(${a.x}px, ${a.y}px)`; el.querySelector('text').textContent=a.label; }
+    else el.style.opacity=0;
+  }
+  const chips=$('#chips');
+  if(chips) chips.innerHTML=[['Material',S.material],[S.gloves?'Con guantes':'Sin guantes',S.gloves],['Informado',S.informed],['Intimidad',S.privacy],['Cama frenada',S.brake],['Registrado',S.reported]]
+    .map(([l,on])=>`<span class="chip${on?' on':''}">${l}</span>`).join('');
+  if(instant) requestAnimationFrame(()=>requestAnimationFrame(()=>svg.classList.remove('noanim')));
+}
+
+function figSVG(k){
+  const body={
+    good:'<circle cx="32" cy="12" r="7"/><path d="M32 20 L32 45 M32 27 L46 37 M32 45 L43 58 L46 75 M32 45 L22 59 L13 75 M42 76 L52 76 M8 76 L18 76"/><rect x="45" y="31" width="12" height="11" rx="2"/>',
+    back:'<circle cx="55" cy="30" r="7"/><path d="M24 46 L49 33 M47 35 L50 53 M24 46 L26 76 M24 46 L22 76 M18 76 L31 76"/><rect x="45" y="53" width="12" height="11" rx="2"/>',
+    feet:'<circle cx="26" cy="12" r="7"/><path d="M26 20 L26 46 M26 27 L54 29 M26 46 L27 76 M26 46 L25 76 M20 76 L32 76"/><rect x="51" y="23" width="12" height="11" rx="2"/>'
+  }[k];
+  return `<svg viewBox="0 0 64 82" class="fig" aria-hidden="true"><line x1="2" y1="78" x2="62" y2="78" class="figFloor"/>${body}</svg>`;
+}
+
+/* ---------- motor ---------- */
+let cur=null, token=0;
+const bestAll = () => store.get('movi-best', {});
+let mode = store.get('movi-mode', 'sim');
+
+function saveMsg(){
+  if (STANDALONE) return 'Al terminar cada ficha recibirás un código. Cuando acabes la sesión, pulsa «Mi código de entrega» y entrega ese código en la tarea del campus: incluye todos tus intentos.';
+  if (!CAP.ready) return 'Se registran todos tus intentos.';
+  return (CAP.db && CAP.uid && !CAP.saveBroken)
+    ? 'Se registran todos tus intentos automáticamente.'
+    : 'Se registran todos tus intentos: al terminar cada ficha recibirás un código para entregar a tu profesor.';
+}
+function idCard(){
+  if (CAP.owner) return `<div class="idcard"><div class="who"><span class="pill good">Profesor</span><span>Tus intentos no se registran y al terminar ves la puntuación.</span></div></div>`;
+  if (!alumno || editingId) return `<form class="idcard" id="idForm" novalidate>
+      <div class="field"><label for="fNom">Nombre y apellidos</label><input id="fNom" autocomplete="name" maxlength="80" value="${esc(alumno?alumno.nombre:'')}"></div>
+      <div class="field" style="flex:0 1 150px"><label for="fGru">Grupo</label><input id="fGru" maxlength="20" placeholder="1º CAE A" value="${esc(alumno?alumno.grupo:'')}"></div>
+      <button class="primary" type="submit">Guardar</button>
+      <p class="hint" id="idHint" style="flex-basis:100%">Escribe tu nombre antes de empezar: con él tu profesor recibe tus intentos.</p>
+    </form>`;
+  const nAtt = myAttempts().length;
+  return `<div class="idcard"><div class="who"><span class="eyebrow">Alumno</span><b id="whoN"></b><span class="pill" id="whoG"></span><button class="ghost" id="idEdit">Cambiar</button>
+      ${nAtt?`<button class="ghost" id="myCode">Mi código de entrega (${nAtt} intento${nAtt===1?'':'s'})</button>`:''}</div>
+    <p class="hint" style="flex-basis:100%">${saveMsg()}</p><div id="codeArea" style="flex-basis:100%" hidden></div></div>`;
+}
+function home(){
+  cur=null; token++; stopSubs(); view.dataset.v='home';
+  const best=bestAll(), showBest = CAP.owner;
+  view.innerHTML=`
+  <section class="hero">
+    <span class="eyebrow">TCB · Técnicas básicas de enfermería</span>
+    <h1>Simulador de movilizaciones</h1>
+    <p>Las 7 técnicas de la ficha, paso a paso, sobre una habitación vista desde arriba. Cada caso cambia de paciente, de lado y de si colabora o no.</p>
+  </section>
+  ${idCard()}
+  <div class="tabs" role="group" aria-label="Modo">
+    <button id="mSim" aria-pressed="${mode==='sim'}">Simular</button>
+    <button id="mChk" aria-pressed="${mode==='chk'}">Observar en pareja</button>
+    ${CAP.owner?'<button id="mNot" aria-pressed="false">Notas</button>':''}
+  </div>
+  <p class="modeNote">${mode==='sim'
+    ? 'Decide qué haces en cada paso. La escena muestra el resultado de cada decisión.'
+    : 'Para practicar con el cuerpo: un alumno hace de paciente, otro de auxiliar y un tercero marca en el móvil los pasos que ve hacer. Esta lista no se registra.'}</p>
+  <div class="grid">${FICHAS.map(f=>`
+    <button class="card" data-id="${f.id}">
+      <span class="num">${f.id}</span>
+      <span class="cat">${f.cat}</span>
+      <span class="nm">${f.name}</span>
+      <span class="meta"><span class="pill">${f.personal}</span>${showBest&&mode==='sim'&&best[f.id]!=null?`<span class="pill${best[f.id]>=90?' good':''}">Tu mejor: ${best[f.id]}%</span>`:''}</span>
+    </button>`).join('')}</div>`;
+  $('#mSim').onclick=()=>{mode='sim'; store.set('movi-mode',mode); home();};
+  $('#mChk').onclick=()=>{mode='chk'; store.set('movi-mode',mode); home();};
+  if (CAP.owner) $('#mNot').onclick=notas;
+  const form=$('#idForm');
+  if (form) form.onsubmit=e=>{
+    e.preventDefault();
+    const nombre=$('#fNom').value.trim().replace(/\s+/g,' '), grupo=$('#fGru').value.trim().replace(/\s+/g,' ');
+    if (nombre.split(' ').length<2){ $('#idHint').textContent='Escribe tu nombre y al menos un apellido.'; form.classList.add('need'); $('#fNom').focus(); return; }
+    alumno={nombre:cut(nombre,80), grupo:cut(grupo,20)}; store.set('movi-alumno',alumno); editingId=false; home();
+  };
+  if ($('#whoN')){ $('#whoN').textContent=alumno.nombre; const g=$('#whoG'); if(alumno.grupo) g.textContent=alumno.grupo; else g.remove(); $('#idEdit').onclick=()=>{editingId=true; home(); $('#fNom').focus();};
+    if ($('#myCode')) $('#myCode').onclick=()=>{ const area=$('#codeArea'); area.hidden=false;
+      area.innerHTML=`<div class="fb ok"><b>Tu código de entrega.</b> Cópialo y entrégalo en la tarea del campus. Incluye todos los intentos que has hecho en este dispositivo.
+        <textarea class="code" id="allTa" readonly aria-label="Código de entrega" style="margin-top:10px"></textarea>
+        <div class="row" style="margin-top:8px"><button class="primary" id="copyAll">Copiar código</button></div></div>`;
+      const code=allCode(), ta=$('#allTa'); ta.value=code;
+      $('#copyAll').onclick=async()=>{ const ok=await copyText(code, ta); $('#copyAll').textContent= ok?'Código copiado':'Selecciona el texto y cópialo'; }; }; }
+  view.querySelectorAll('.card').forEach(b=>b.onclick=()=>{
+    const f=FICHAS.find(x=>x.id==b.dataset.id);
+    if (mode==='chk') return checklist(f, true);
+    if (!CAP.owner && (!alumno || editingId)){ const fm=$('#idForm'); fm.classList.add('need'); $('#idHint').textContent='Antes de empezar, escribe tu nombre y pulsa Guardar.'; fm.scrollIntoView({block:'center'}); $('#fNom').focus({preventScroll:true}); return; }
+    startSim(f);
+  });
+  window.scrollTo(0,0);
+}
+
+function makeCase(f, forced){
+  const c=Object.assign({side:rnd(['p','v']), colab:Math.random()<.5, p:rnd(PAC), dizzy:Math.random()<.5}, forced||{});
+  f.setup(c);
+  return c;
+}
+
+function startSim(f){
+  token++; stopSubs(); view.dataset.v='sim';
+  const c=makeCase(f);
+  const S=baseState(); f.init(S,c);
+  cur={f, c, S, steps:f.steps(c), i:-1, firstOk:0, errs:[], stepErr:false};
+  view.innerHTML=`
+  <div class="simTop">
+    <button class="ghost" id="back">← Fichas</button>
+    <div class="simTitle"><span class="eyebrow">Ficha ${f.id} · ${f.cat}</span><h2>${f.name}</h2></div>
+  </div>
+  <div class="simGrid">
+    <div class="sceneBox">${sceneSVG()}<div class="chips" id="chips"></div></div>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>`;
+  $('#back').onclick=home;
+  drawScene(S,true);
+  brief();
+  window.scrollTo(0,0);
+}
+
+function brief(){
+  const {f,c}=cur;
+  const colabTxt = c.colabTxt || (f.variants ? (c.colab ? 'Consciente y orientado: puede colaborar.' : 'Muy debilitado y somnoliento: no puede colaborar.') : 'Consciente y orientado.');
+  $('#panel').innerHTML=`
+    <span class="eyebrow">Caso</span>
+    <h3>${esc(c.p.n)}, ${c.p.e} años</h3>
+    <dl class="case">
+      <dt>Estado</dt><dd>${colabTxt}</dd>
+      <dt>Objetivo</dt><dd>${c.goal}</dd>
+      <dt>Para qué</dt><dd>${f.para}</dd>
+    </dl>
+    <p class="hint">La puerta está a la izquierda de la escena y la ventana a la derecha. Si fallas, verás por qué y podrás corregir, pero el fallo queda registrado.</p>
+    <button class="primary" id="go">Empezar</button>`;
+  $('#go').onclick=()=>{cur.i=0; cur.t0=Date.now(); step();};
+}
+
+function later(fn, ms){ const t=token; setTimeout(()=>{ if(t!==token||!cur) return; fn(); drawScene(cur.S); }, ms); }
+function danger(){
+  const b=$('.sceneBox'); if(!b) return;
+  b.classList.remove('danger'); void b.offsetWidth; b.classList.add('danger');
+  setTimeout(()=>b.classList.remove('danger'),900);
+  try{ navigator.vibrate && navigator.vibrate(70); }catch(e){}
+}
+function logErr(st, t, fb){
+  if(!cur.stepErr){ cur.stepErr=true; }
+  cur.errs.push({q:st.q, t, fb});
+}
+
+function step(){
+  const st=cur.steps[cur.i], n=cur.steps.length;
+  cur.stepErr=false;
+  const panel=$('#panel');
+  panel.innerHTML=`
+    <div class="prog"><span>Paso ${cur.i+1} de ${n}</span><div class="bar"><i style="width:${(cur.i)/n*100}%"></i></div></div>
+    ${st.ctx?`<p class="ctx">${st.ctx}</p>`:''}
+    <h3>${st.q}</h3>
+    <div class="opts${st.fig?' figs':''}" id="opts"></div>
+    <div class="fb" id="fb" hidden></div>
+    <button class="primary" id="next" hidden>${cur.i===n-1?'Ver resultado':'Continuar'}</button>`;
+  const opts=$('#opts'), fb=$('#fb'), next=$('#next');
+  const showFb=(ok, txt)=>{ fb.hidden=false; fb.className='fb '+(ok?'ok':'bad'); fb.innerHTML=`<b>${ok?'Correcto.':'No es así.'}</b> ${txt||''}`; };
+  const done=(txt)=>{
+    if(!cur.stepErr) cur.firstOk++;
+    showFb(true, txt); next.hidden=false;
+    panel.querySelector('.bar i').style.width=((cur.i+1)/n*100)+'%';
+    next.focus({preventScroll:true});
+  };
+  next.onclick=()=>{ cur.i++; if(cur.i>=n) result(); else { step(); if(window.innerWidth<880) panel.scrollIntoView({block:'nearest'}); } };
+
+  if(st.type==='choice'){
+    shuffle(st.opts).forEach(o=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.innerHTML=(o.fig?figSVG(o.fig):`<span class="mk"></span>`)+`<span>${o.t}</span>`;
+      b.onclick=()=>{
+        if(o.ok){
+          opts.querySelectorAll('.opt').forEach(x=>{x.disabled=true; if(x!==b) x.classList.add('dim');});
+          b.classList.remove('dim'); b.classList.add('ok'); if(!o.fig) b.querySelector('.mk').textContent='✓';
+          if(st.a) st.a(cur.S, later); if(o.a) o.a(cur.S);
+          drawScene(cur.S); done(o.fb);
+        } else {
+          b.classList.add('bad'); b.disabled=true; if(!o.fig) b.querySelector('.mk').textContent='✕';
+          logErr(st,o.t,o.fb); showFb(false,o.fb); if(o.danger) danger();
+        }
+      };
+      opts.appendChild(b);
+    });
+  }
+  else if(st.type==='order'){
+    let k=0;
+    const items=st.items.map((it,idx)=>Object.assign({idx},it));
+    shuffle(items).forEach(it=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.innerHTML=`<span class="mk"></span><span>${it.t}</span>`;
+      b.onclick=()=>{
+        if(it.idx===k){
+          k++; b.disabled=true; b.classList.remove('bad'); b.classList.add('ok'); b.querySelector('.mk').textContent=k;
+          if(it.a){ it.a(cur.S); drawScene(cur.S); }
+          fb.hidden=true;
+          if(k===st.items.length) done(st.fb);
+        } else {
+          b.classList.add('bad'); setTimeout(()=>b.classList.remove('bad'),700);
+          logErr(st, it.t+' (fuera de orden)', st.wrong); showFb(false, st.wrong);
+        }
+      };
+      opts.appendChild(b);
+    });
+  }
+  else if(st.type==='multi'){
+    const sel=new Set();
+    shuffle(st.items).forEach(it=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.setAttribute('aria-pressed','false'); b.innerHTML=`<span class="mk"></span><span>${it.t}</span>`;
+      b.onclick=()=>{ if(sel.has(it)){sel.delete(it); b.classList.remove('sel'); b.setAttribute('aria-pressed','false'); b.querySelector('.mk').textContent='';} else {sel.add(it); b.classList.add('sel'); b.setAttribute('aria-pressed','true'); b.querySelector('.mk').textContent='✓';} };
+      b._it=it; opts.appendChild(b);
+    });
+    const chk=document.createElement('button'); chk.className='primary'; chk.textContent='Comprobar';
+    opts.after(chk);
+    chk.onclick=()=>{
+      const wrongSel=[...sel].filter(i=>!i.ok), missing=st.items.filter(i=>i.ok && !sel.has(i));
+      if(!wrongSel.length && !missing.length){
+        chk.remove();
+        opts.querySelectorAll('.opt').forEach(x=>{x.disabled=true; if(x._it.ok){x.classList.remove('sel'); x.classList.add('ok');} else x.classList.add('dim');});
+        if(st.a) st.a(cur.S, later); drawScene(cur.S); done(st.fb);
+      } else {
+        let msg=''; if(wrongSel.length) msg+=`Sobra: ${wrongSel.map(i=>i.t.toLowerCase()).join('; ')}. `;
+        if(missing.length) msg+=`Te falta ${missing.length===1?'una opción':missing.length+' opciones'}.`;
+        logErr(st, 'Selección incompleta o con errores', msg); showFb(false,msg);
+      }
+    };
+  }
+}
+
+function result(){
+  const {f,c,steps,firstOk,errs}=cur, n=steps.length;
+  const uniq=[]; const seen=new Set(); errs.forEach(e=>{ const k=e.q+e.t; if(!seen.has(k)){seen.add(k); uniq.push(e);} });
+  if (!CAP.owner){
+    const att={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7), f:f.id, ok:firstOk, n,
+      colab: f.variants ? !!c.colab : null, t:new Date().toISOString(), dur:Math.round((Date.now()-(cur.t0||Date.now()))/1000),
+      errs: uniq.slice(0,10).map(e=>cut(e.t,90)), nombre: alumno?alumno.nombre:'', grupo: alumno?alumno.grupo:''};
+    return studentResult(f, att);
+  }
+  const pct=Math.round(firstOk/n*100);
+  const best=bestAll(); if(best[f.id]==null || pct>best[f.id]){ best[f.id]=pct; store.set('movi-best',best); }
+  const lbl = pct>=90 ? 'Procedimiento seguro' : pct>=70 ? 'Casi: repasa los fallos' : 'Repite la ficha';
+  $('#panel').innerHTML=`
+    <span class="eyebrow">Resultado</span>
+    <div class="score"><b>${pct}%</b><span>${lbl}</span></div>
+    <p class="hint">${firstOk} de ${n} pasos acertados a la primera.</p>
+    ${uniq.length?`<h3>Tus fallos</h3><div class="errs">${uniq.map(e=>`<div class="err"><span>${e.q}</span><i>${e.t}</i><span>${e.fb||''}</span></div>`).join('')}</div>`:'<p>Sin fallos. Prueba otro caso: cambia el paciente y el lado.</p>'}
+    <div class="box2">
+      <div class="kbox k"><h4>Puntos clave</h4><ul class="lst">${f.clave.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="kbox e"><h4>Errores frecuentes</h4><ul class="lst">${f.errores.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <div class="row"><button class="primary" id="again">Otro caso</button><button class="ghost" id="list">Elegir otra ficha</button></div>`;
+  $('#again').onclick=()=>startSim(f);
+  $('#list').onclick=home;
+}
+
+function studentResult(f, att){
+  $('#panel').innerHTML=`
+    <span class="eyebrow">Ficha completada</span>
+    <h3>${f.name}</h3>
+    <p class="hint">Puedes repetirla con otro caso: todos tus intentos quedan registrados.</p>
+    <div class="fb ok" id="saveBox" role="status">Guardando tu intento…</div>
+    <div class="box2">
+      <div class="kbox k"><h4>Puntos clave</h4><ul class="lst">${f.clave.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="kbox e"><h4>Errores frecuentes</h4><ul class="lst">${f.errores.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <div class="row"><button class="primary" id="again">Otro caso</button><button class="ghost" id="list">Elegir otra ficha</button></div>`;
+  $('#again').onclick=()=>startSim(f);
+  $('#list').onclick=home;
+  const t=token;
+  pushHist(att);
+  saveAttempt(att).then(r=>{
+    if (t!==token) return;
+    const box=$('#saveBox'); if(!box) return;
+    if (r.ok){ box.innerHTML='<b>Intento guardado.</b> Tu profesor lo verá en su panel.'; return; }
+    const code=encCode({n:att.nombre, g:att.grupo, a:slimAtt(att,6,70)});
+    box.className= STANDALONE ? 'fb ok' : 'fb bad';
+    box.innerHTML= (STANDALONE
+      ? `<b>Intento registrado.</b> Este es el código de esta ficha. Si al final de la sesión entregas «Mi código de entrega» (en la portada), no hace falta que entregues este.`
+      : `<b>No se ha podido guardar desde aquí.</b> Copia este código y entrégaselo a tu profesor por el canal que te indique. También puedes entregar todos tus intentos juntos desde «Mi código de entrega», en la portada.`) + `
+      <textarea class="code" id="codeTa" readonly aria-label="Código de entrega" style="margin-top:10px"></textarea>
+      <div class="row" style="margin-top:8px"><button class="primary" id="copyC">Copiar código</button></div>`;
+    const ta=$('#codeTa'); ta.value=code;
+    $('#copyC').onclick=async()=>{ const ok=await copyText(code, ta); $('#copyC').textContent = ok?'Código copiado':'Selecciona el texto y cópialo'; };
+  });
+}
+
+/* ---------- panel de notas (solo propietario) ---------- */
+let unsubs=[];
+function stopSubs(){ unsubs.forEach(u=>{ try{u();}catch(e){} }); unsubs=[]; }
+function notas(){}
+/* ---------- lista de observación ---------- */
+function checklist(f, colab){
+  token++; cur=null; stopSubs(); view.dataset.v='chk';
+  const c=makeCase(f,{side:'v', colab, dizzy:false, p:PAC[0]});
+  const items=f.steps(c).map(s=>s.ck);
+  const state=new Set(), errs=new Set();
+  const render=()=>{
+    view.innerHTML=`
+    <div class="simTop">
+      <button class="ghost" id="back">← Fichas</button>
+      <div class="simTitle"><span class="eyebrow">Ficha ${f.id} · Lista de observación</span><h2>${f.name}</h2></div>
+    </div>
+    <div class="chk">
+      ${f.variants?`<div class="tabs" role="group" aria-label="Paciente">
+        <button id="vc" aria-pressed="${!!colab}">Colabora</button><button id="vn" aria-pressed="${!colab}">No colabora</button></div>`:''}
+      <div class="tip"><span class="eyebrow">Cómo practicarlo sin cama ni maniquí</span><p>${f.aula}</p>
+        <p class="hint">Personal: ${c.n===3?'al menos 3 auxiliares':c.n===1?'1 auxiliar':c.n+' auxiliares'}. El alumno que hace de paciente puede decir «para» en cualquier momento.</p></div>
+      <h3>Pasos observados</h3>
+      <div class="opts">${items.map((t,i)=>`<button class="citem" data-i="${i}" aria-pressed="${state.has(i)}"><span class="bx">${state.has(i)?'✓':''}</span><span class="n">${i+1}</span><span>${t}</span></button>`).join('')}</div>
+      <h3>Errores observados</h3>
+      <div class="opts">${f.errores.map((t,i)=>`<button class="citem er" data-e="${i}" aria-pressed="${errs.has(i)}"><span class="bx">${errs.has(i)?'✕':''}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="sticky"><span class="tally">${state.size} / ${items.length} pasos${errs.size?` · ${errs.size} error${errs.size>1?'es':''}`:''}</span><button class="ghost" id="reset">Vaciar lista</button></div>
+    </div>`;
+    $('#back').onclick=home;
+    if(f.variants){ $('#vc').onclick=()=>checklist(f,true); $('#vn').onclick=()=>checklist(f,false); }
+    view.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; state.has(i)?state.delete(i):state.add(i); keep(); });
+    view.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.e; errs.has(i)?errs.delete(i):errs.add(i); keep(); });
+    $('#reset').onclick=()=>{ state.clear(); errs.clear(); keep(); };
+  };
+  const keep=()=>{ const y=window.scrollY; render(); window.scrollTo(0,y); };
+  render(); window.scrollTo(0,0);
+}
+
+home();
+})();
+</script>
+</body>
+</html>
